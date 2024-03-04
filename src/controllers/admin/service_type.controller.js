@@ -21,9 +21,7 @@ error500 = (error, res) => {
 const addServiceType = async (req, res) => {
     const  service_type_name  = req.body.service_type_name  ? req.body.service_type_name.trim()  : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id  = req.companyData.untitled_id ;
-    const untitled_id = 1;
-   
+    const untitled_id  = req.companyData.untitled_id ;
  
     if (!service_type_name) {
         return error422("Service Type Name is required.", res);
@@ -32,8 +30,8 @@ const addServiceType = async (req, res) => {
     }
 
     //check service type already is exists or not
-    const isExistServiceTypeQuery = `SELECT * FROM service_type WHERE LOWER(TRIM(service_type_name))= ?`;
-    const isExistServiceTypeResult = await pool.query(isExistServiceTypeQuery, [ service_type_name.toLowerCase()]);
+    const isExistServiceTypeQuery = `SELECT * FROM service_type WHERE LOWER(TRIM(service_type_name))= ? AND untitled_id = ?`;
+    const isExistServiceTypeResult = await pool.query(isExistServiceTypeQuery, [ service_type_name.toLowerCase(), untitled_id ]);
     if (isExistServiceTypeResult[0].length > 0) {
         return error422(" Service Type Name is already exists.", res);
     } 
@@ -56,8 +54,7 @@ const addServiceType = async (req, res) => {
 // get service_type list...
 const getServiceTypes = async (req, res) => {
     const { page, perPage, key } = req.query;
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1 ;
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         let getServiceTypeQuery = `SELECT s.*, u.untitled_id  FROM service_type s
@@ -123,13 +120,14 @@ const getServiceTypes = async (req, res) => {
 // get service_type  by id...
 const getServiceType = async (req, res) => {
     const servicetypeId = parseInt(req.params.id);
+    const untitled_id  = req.companyData.untitled_id ;
 
     try {
         const servicetypeQuery = `SELECT s.*, u.untitled_id  FROM  service_type s
         LEFT JOIN untitled u 
         ON s.untitled_id = u.untitled_id
-        WHERE s.service_type_id  = ?`;
-        const servicetypeResult = await pool.query(servicetypeQuery, [servicetypeId]);
+        WHERE s.service_type_id  = ? AND s.untitled_id = ?`;
+        const servicetypeResult = await pool.query(servicetypeQuery, [servicetypeId, untitled_id]);
         
         if (servicetypeResult[0].length == 0) {
             return error422("Service Type Not Found.", res);
@@ -151,8 +149,8 @@ const updateServiceType = async (req, res) => {
     const servicetypeId = parseInt(req.params.id);
     const service_type_name = req.body.service_type_name ? req.body.service_type_name.trim() : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1;
+    const untitled_id = req.companyData.untitled_id;
+
     if (!service_type_name) {
         return error422("Service Type name is required.", res);
     } else if (!untitled_id) {
@@ -162,14 +160,14 @@ const updateServiceType = async (req, res) => {
     }
     try {
         // Check if service_type exists
-        const servicetypeQuery = "SELECT * FROM service_type WHERE service_type_id  = ?";
-        const servicetypeResult = await pool.query(servicetypeQuery, [servicetypeId]);
+        const servicetypeQuery = "SELECT * FROM service_type WHERE service_type_id  = ? AND untitled_id = ?";
+        const servicetypeResult = await pool.query(servicetypeQuery, [servicetypeId, untitled_id ]);
         if (servicetypeResult[0].length == 0) {
             return error422("Service Type Not Found.", res);
         }
         // Check if the provided service_type exists and is active 
-        const existingServiceTypeQuery = "SELECT * FROM service_type WHERE LOWER(TRIM( service_type_name )) = ? AND service_type_id!=?";
-        const existingServiceTypeResult = await pool.query(existingServiceTypeQuery, [service_type_name.trim().toLowerCase(), servicetypeId]);
+        const existingServiceTypeQuery = "SELECT * FROM service_type WHERE LOWER(TRIM( service_type_name )) = ? AND service_type_id!=? AND untitled_id = ?";
+        const existingServiceTypeResult = await pool.query(existingServiceTypeQuery, [service_type_name.trim().toLowerCase(), servicetypeId, untitled_id ]);
 
         if (existingServiceTypeResult[0].length > 0) {
             return error422("Service Type name already exists.", res);
@@ -197,10 +195,12 @@ const updateServiceType = async (req, res) => {
 const onStatusChange = async (req, res) => {
     const servicetypeId = parseInt(req.params.id);
     const status = parseInt(req.query.status); // Validate and parse the status parameter
+    const untitled_id = req.companyData.untitled_id ;
+
     try {
         // Check if the service_type  exists
-        const servicetypeQuery = "SELECT * FROM service_type WHERE service_type_id = ?";
-        const servicetypeResult = await pool.query(servicetypeQuery, [servicetypeId]);
+        const servicetypeQuery = "SELECT * FROM service_type WHERE service_type_id = ? AND untitled_id = ?";
+        const servicetypeResult = await pool.query(servicetypeQuery, [servicetypeId, untitled_id]);
 
         if (servicetypeResult[0].length == 0) {
             return res.status(404).json({
@@ -238,8 +238,8 @@ const onStatusChange = async (req, res) => {
 };
 //get service_type active...
 const getServiceTypeWma = async (req, res) => {
-    
-    let servicetypeQuery = "SELECT s.*  FROM service_type s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=1 ORDER BY s.cts DESC";
+    const untitled_id = req.companyData.untitled_id;
+    let servicetypeQuery = `SELECT s.*  FROM service_type s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=2 AND s.untitled_id = ${untitled_id} ORDER BY s.cts DESC`;
     try {
         const servicetypeResult = await pool.query(servicetypeQuery);
         const servicetype = servicetypeResult[0];

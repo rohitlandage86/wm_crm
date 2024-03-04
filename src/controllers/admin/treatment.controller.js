@@ -21,9 +21,7 @@ error500 = (error, res) => {
 const addTreatment = async (req, res) => {
     const  treatment_name  = req.body.treatment_name  ? req.body.treatment_name.trim()  : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id  = req.companyData.untitled_id ;
-    const untitled_id = 1;
-   
+    const untitled_id  = req.companyData.untitled_id ;
  
     if (!treatment_name) {
         return error422("Treatment Name is required.", res);
@@ -31,8 +29,8 @@ const addTreatment = async (req, res) => {
         return error422("Untitled ID is required.", res);
     }
     //check Treatment already is exists or not
-    const isExistTreatmentQuery = `SELECT * FROM treatment WHERE LOWER(TRIM(treatment_name))= ?`;
-    const isExistTreatmentResult = await pool.query(isExistTreatmentQuery, [treatment_name.toLowerCase()]);
+    const isExistTreatmentQuery = `SELECT * FROM treatment WHERE LOWER(TRIM(treatment_name))= ? AND untitled_id = ?`;
+    const isExistTreatmentResult = await pool.query(isExistTreatmentQuery, [treatment_name.toLowerCase(), untitled_id ]);
     if (isExistTreatmentResult[0].length > 0) {
         return error422(" Treatment Name is already exists.", res);
     } 
@@ -53,8 +51,7 @@ const addTreatment = async (req, res) => {
 // get treatment list...
 const getTreatments = async (req, res) => {
     const { page, perPage, key } = req.query;
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1 ;
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         let getTreatmentQuery = `SELECT t.*, u.untitled_id  FROM treatment t
@@ -119,13 +116,14 @@ const getTreatments = async (req, res) => {
 // get treatment  by id...
 const getTreatment = async (req, res) => {
     const treatmentId = parseInt(req.params.id);
+    const untitled_id = req.companyData.untitled_id ;
 
     try {
         const treatmentQuery = `SELECT t.*, u.untitled_id  FROM  treatment t
         LEFT JOIN untitled u 
         ON t.untitled_id = u.untitled_id
-        WHERE t.treatment_id  = ?`;
-        const treatmentResult = await pool.query(treatmentQuery, [treatmentId]);
+        WHERE t.treatment_id  = ? AND t.untitled_id = ?`;
+        const treatmentResult = await pool.query(treatmentQuery, [treatmentId, untitled_id]);
         if (treatmentResult[0].length == 0) {
             return error422("Treatment Not Found.", res);
         }
@@ -144,8 +142,7 @@ const updateTreatment = async (req, res) => {
     const treatmentId = parseInt(req.params.id);
     const treatment_name = req.body.treatment_name ? req.body.treatment_name.trim() : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1;
+    const untitled_id = req.companyData.untitled_id;
     if (!treatment_name) {
         return error422("Treatment name is required.", res);
     } else if (!untitled_id) {
@@ -155,14 +152,14 @@ const updateTreatment = async (req, res) => {
     }
     try {
         // Check if treatment exists
-        const treatmentQuery = "SELECT * FROM treatment WHERE treatment_id  = ?";
-        const treatmentResult = await pool.query(treatmentQuery, [treatmentId]);
+        const treatmentQuery = "SELECT * FROM treatment WHERE treatment_id  = ? AND untitled_id = ?";
+        const treatmentResult = await pool.query(treatmentQuery, [treatmentId, untitled_id]);
         if (treatmentResult[0].length == 0) {
             return error422("Treatment Not Found.", res);
         }
         // Check if the provided Treatment exists and is active 
-        const existingTreatmentQuery = "SELECT * FROM treatment WHERE LOWER(TRIM( treatment_name )) = ? AND treatment_id!=?";
-        const existingTreatmentResult = await pool.query(existingTreatmentQuery, [treatment_name.trim().toLowerCase(), treatmentId]);
+        const existingTreatmentQuery = "SELECT * FROM treatment WHERE LOWER(TRIM( treatment_name )) = ? AND treatment_id!=? AND untitled_id = ?";
+        const existingTreatmentResult = await pool.query(existingTreatmentQuery, [treatment_name.trim().toLowerCase(), treatmentId, untitled_id]);
 
         if (existingTreatmentResult[0].length > 0) {
             return error422("Treatment name already exists.", res);
@@ -190,10 +187,11 @@ const updateTreatment = async (req, res) => {
 const onStatusChange = async (req, res) => {
     const treatmentId = parseInt(req.params.id);
     const status = parseInt(req.query.status); // Validate and parse the status parameter
+    const untitled_id = req.companyData.untitled_id;
     try {
         // Check if the treatment  exists
-        const treatmentQuery = "SELECT * FROM treatment WHERE treatment_id = ?";
-        const treatmentResult = await pool.query(treatmentQuery, [treatmentId]);
+        const treatmentQuery = "SELECT * FROM treatment WHERE treatment_id = ? AND untitled_id = ?";
+        const treatmentResult = await pool.query(treatmentQuery, [treatmentId, untitled_id]);
 
         if (treatmentResult[0].length == 0) {
             return res.status(404).json({
@@ -231,8 +229,8 @@ const onStatusChange = async (req, res) => {
 };
 //get treatment active...
 const getTreatmentWma = async (req, res) => {
-
-    let treatmentQuery = "SELECT t.*  FROM treatment t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=1 ORDER BY t.cts DESC";
+    const untitled_id = req.companyData.untitled ;
+    let treatmentQuery = `SELECT t.*  FROM treatment t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=2 AND t.untitled_id = ${untitled_id } ORDER BY t.cts DESC`;
     try {
         const treatmentResult = await pool.query(treatmentQuery);
         const treatments = treatmentResult[0];

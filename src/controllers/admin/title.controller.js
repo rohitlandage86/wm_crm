@@ -20,9 +20,7 @@ error500 = (error, res) => {
 const addTitle = async (req, res) => {
     const  title_name  = req.body.title_name  ? req.body.title_name.trim()  : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id  = req.companyData.untitled_id ;
-    const untitled_id = 1;
-   
+    const untitled_id  = req.companyData.untitled_id ;
  
     if (!title_name) {
         return error422("Title Name is required.", res);
@@ -30,8 +28,8 @@ const addTitle = async (req, res) => {
         return error422("Untitled ID is required.", res);
     }
     //check title already is exists or not
-    const isExistTitleQuery = `SELECT * FROM title WHERE LOWER(TRIM(title_name))= ?`;
-    const isExistTitleResult = await pool.query(isExistTitleQuery, [title_name.toLowerCase()]);
+    const isExistTitleQuery = `SELECT * FROM title WHERE LOWER(TRIM(title_name))= ? AND untitled_id = ?`;
+    const isExistTitleResult = await pool.query(isExistTitleQuery, [title_name.toLowerCase(), untitled_id]);
     if (isExistTitleResult[0].length > 0) {
         return error422(" Title Name is already exists.", res);
     } 
@@ -52,8 +50,7 @@ const addTitle = async (req, res) => {
 // get title list...
 const getTitles = async (req, res) => {
     const { page, perPage, key } = req.query;
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1 ;
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         let getTitleQuery = `SELECT t.*, u.untitled_id  FROM title t
@@ -118,13 +115,14 @@ const getTitles = async (req, res) => {
 // get title  by id...
 const getTitle = async (req, res) => {
     const titleId = parseInt(req.params.id);
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         const titleQuery = `SELECT t.*, u.untitled_id  FROM  title t
         LEFT JOIN untitled u 
         ON t.untitled_id = u.untitled_id
-        WHERE t.title_id  = ?`;
-        const titleResult = await pool.query(titleQuery, [titleId]);
+        WHERE t.title_id  = ? AND t.untitled_id = ?`;
+        const titleResult = await pool.query(titleQuery, [titleId, untitled_id]);
         if (titleResult[0].length == 0) {
             return error422("Title Not Found.", res);
         }
@@ -143,8 +141,7 @@ const updateTitle = async (req, res) => {
     const titleId = parseInt(req.params.id);
     const title_name = req.body.title_name ? req.body.title_name.trim() : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1;
+    const untitled_id = req.companyData.untitled_id;
     if (!title_name) {
         return error422("Title name is required.", res);
     } else if (!untitled_id) {
@@ -154,14 +151,14 @@ const updateTitle = async (req, res) => {
     }
     try {
         // Check if title exists
-        const titleQuery = "SELECT * FROM title WHERE title_id  = ?";
-        const titleResult = await pool.query(titleQuery, [titleId]);
+        const titleQuery = "SELECT * FROM title WHERE title_id  = ? AND untitled_id = ?";
+        const titleResult = await pool.query(titleQuery, [titleId, untitled_id ]);
         if (titleResult[0].length == 0) {
             return error422("Title Not Found.", res);
         }
         // Check if the provided title exists and is active 
-        const existingTitleQuery = "SELECT * FROM title WHERE LOWER(TRIM( title_name )) = ? AND title_id!=?";
-        const existingTitleResult = await pool.query(existingTitleQuery, [title_name.trim().toLowerCase(), titleId]);
+        const existingTitleQuery = "SELECT * FROM title WHERE LOWER(TRIM( title_name )) = ? AND title_id!=? AND untitled_id = ?";
+        const existingTitleResult = await pool.query(existingTitleQuery, [title_name.trim().toLowerCase(), titleId, untitled_id]);
 
         if (existingTitleResult[0].length > 0) {
             return error422("Title name already exists.", res);
@@ -189,10 +186,11 @@ const updateTitle = async (req, res) => {
 const onStatusChange = async (req, res) => {
     const titleId = parseInt(req.params.id);
     const status = parseInt(req.query.status); // Validate and parse the status parameter
+    const untitled_id = req.companyData.untitled_id ;
     try {
         // Check if the title  exists
-        const titleQuery = "SELECT * FROM title WHERE title_id = ?";
-        const titleResult = await pool.query(titleQuery, [titleId]);
+        const titleQuery = "SELECT * FROM title WHERE title_id = ? AND untitled_id ?";
+        const titleResult = await pool.query(titleQuery, [titleId, untitled_id]);
 
         if (titleResult[0].length == 0) {
             return res.status(404).json({
@@ -230,8 +228,8 @@ const onStatusChange = async (req, res) => {
 };
 //get title active...
 const getTitleWma = async (req, res) => {
-
-    let titleQuery = "SELECT t.*  FROM title t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=1 ORDER BY t.cts DESC";
+    const untitled_id = req.companyData.untitled_id ;
+    let titleQuery = `SELECT t.*  FROM title t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=2 AND t.untitled_id = ${untitled_id} ORDER BY t.cts DESC`;
     try {
         const titleResult = await pool.query(titleQuery);
         const title = titleResult[0];

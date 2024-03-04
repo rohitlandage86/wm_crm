@@ -21,9 +21,7 @@ error500 = (error, res) => {
 const addSourceOfPatient = async (req, res) => {
     const   source_of_patient_name   = req.body. source_of_patient_name   ? req.body. source_of_patient_name .trim()  : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id  = req.companyData.untitled_id ;
-    const untitled_id = 1;
-   
+    const untitled_id  = req.companyData.untitled_id ;
  
     if (! source_of_patient_name ) {
         return error422(" Source Of Patient Name is required.", res);
@@ -32,8 +30,8 @@ const addSourceOfPatient = async (req, res) => {
     }
 
     //check  source of patient already is exists or not
-    const isExistSourceOfPatientQuery = `SELECT * FROM  source_of_patient  WHERE LOWER(TRIM(source_of_patient_name))= ?`;
-    const isExistSourceOfPatientResult = await pool.query(isExistSourceOfPatientQuery, [ source_of_patient_name.toLowerCase()]);
+    const isExistSourceOfPatientQuery = `SELECT * FROM  source_of_patient  WHERE LOWER(TRIM(source_of_patient_name))= ? AND untitled_id = ?`;
+    const isExistSourceOfPatientResult = await pool.query(isExistSourceOfPatientQuery, [ source_of_patient_name.toLowerCase(), untitled_id]);
     if (isExistSourceOfPatientResult[0].length > 0) {
         return error422(" Source of Patient Name is already exists.", res);
     } 
@@ -56,8 +54,7 @@ const addSourceOfPatient = async (req, res) => {
 // get source of patient list...
 const getSourceOfPatients = async (req, res) => {
     const { page, perPage, key } = req.query;
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1 ;
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         let getSourceOfPatientQuery = `SELECT s.*, u.untitled_id  FROM source_of_patient s
@@ -124,13 +121,14 @@ const getSourceOfPatients = async (req, res) => {
 // get source of patient  by id...
 const getSourceOfPatient = async (req, res) => {
     const sourceofpatientId = parseInt(req.params.id);
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         const sourceofpatientQuery = `SELECT s.*, u.untitled_id  FROM  source_of_patient s
         LEFT JOIN untitled u 
         ON s.untitled_id = u.untitled_id
-        WHERE s.source_of_patient_id  = ?`;
-        const sourceofpatientResult = await pool.query(sourceofpatientQuery, [sourceofpatientId]);
+        WHERE s.source_of_patient_id  = ? AND s.untitled_id = ?`;
+        const sourceofpatientResult = await pool.query(sourceofpatientQuery, [sourceofpatientId, untitled_id]);
         
         if (sourceofpatientResult[0].length == 0) {
             return error422("Source Of PatientNot Found.", res);
@@ -152,8 +150,7 @@ const updateSourceOfPatient = async (req, res) => {
     const sourceofpatientId = parseInt(req.params.id);
     const source_of_patient_name = req.body.source_of_patient_name ? req.body.source_of_patient_name.trim() : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1;
+    const untitled_id = req.companyData.untitled_id;
     if (!source_of_patient_name) {
         return error422("Source Of Patient name is required.", res);
     } else if (!untitled_id) {
@@ -163,14 +160,14 @@ const updateSourceOfPatient = async (req, res) => {
     }
     try {
         // Check if source of patient exists
-        const sourceofpatientQuery = "SELECT * FROM source_of_patient WHERE source_of_patient_id  = ?";
-        const sourceofpatientResult = await pool.query(sourceofpatientQuery, [sourceofpatientId]);
+        const sourceofpatientQuery = "SELECT * FROM source_of_patient WHERE source_of_patient_id  = ? AND untitled_id = ?";
+        const sourceofpatientResult = await pool.query(sourceofpatientQuery, [sourceofpatientId, untitled_id]);
         if (sourceofpatientResult[0].length == 0) {
             return error422("Source Of Patient Not Found.", res);
         }
         // Check if the provided source of patient exists and is active 
-        const existingSourceOfPatientQuery = "SELECT * FROM source_of_patient WHERE LOWER(TRIM( source_of_patient_name )) = ? AND source_of_patient_id!=?";
-        const existingSourceOfPatientResult = await pool.query(existingSourceOfPatientQuery, [source_of_patient_name.trim().toLowerCase(), sourceofpatientId]);
+        const existingSourceOfPatientQuery = "SELECT * FROM source_of_patient WHERE LOWER(TRIM( source_of_patient_name )) = ? AND source_of_patient_id!=? AND untitled_id = ?";
+        const existingSourceOfPatientResult = await pool.query(existingSourceOfPatientQuery, [source_of_patient_name.trim().toLowerCase(), sourceofpatientId, untitled_id ]);
 
         if (existingSourceOfPatientResult[0].length > 0) {
             return error422("Source of Patient name already exists.", res);
@@ -198,10 +195,11 @@ const updateSourceOfPatient = async (req, res) => {
 const onStatusChange = async (req, res) => {
     const sourceofpatientId = parseInt(req.params.id);
     const status = parseInt(req.query.status); // Validate and parse the status parameter
+    const untitled_id = req.companyData.untitled_id;
     try {
         // Check if the source of patient  exists
-        const sourceofpatientQuery = "SELECT * FROM source_of_patient WHERE source_of_patient_id = ?";
-        const sourceofpatientResult = await pool.query(sourceofpatientQuery, [sourceofpatientId]);
+        const sourceofpatientQuery = `SELECT * FROM source_of_patient WHERE source_of_patient_id = ? AND untitled_id = ? `;
+        const sourceofpatientResult = await pool.query(sourceofpatientQuery, [sourceofpatientId, untitled_id ]);
 
         if (sourceofpatientResult[0].length == 0) {
             return res.status(404).json({
@@ -239,8 +237,8 @@ const onStatusChange = async (req, res) => {
 };
 //get source of patient active...
 const getSourceOfPatientWma = async (req, res) => {
-    
-    let sourceofpatientQuery = "SELECT s.*  FROM source_of_patient s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=1 ORDER BY s.cts DESC";
+    const untitled_id = req.companyData.untitled_id; 
+    let sourceofpatientQuery = `SELECT s.*  FROM source_of_patient s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=2 AND s.untitled_id = ${untitled_id} ORDER BY s.cts DESC`;
     try {
         const sourceofpatientResult = await pool.query(sourceofpatientQuery);
         const sourceofpatient = sourceofpatientResult[0];
