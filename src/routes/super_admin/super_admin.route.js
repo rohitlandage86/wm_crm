@@ -6,6 +6,7 @@ const super_adminController = require("../../controllers/super_admin/super_admin
 router.post('/',super_adminController.createSuperAdmin);
 router.post('/login',super_adminController.login);
 router.get('/lead-status',super_adminController.getAllLeadStatusList)
+router.get('/state',super_adminController.getAllStateList)
 
 
 module.exports = router 

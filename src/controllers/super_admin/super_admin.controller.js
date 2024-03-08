@@ -246,7 +246,7 @@ const login = async (req, res) => {
     return error500(error, res);
   }
 }
-
+//get alll lead status list
 const getAllLeadStatusList = async (req, res )=> {
   try {
     const leadStatusQuery = "SELECT * FROM lead_status WHERE status = 1";
@@ -259,11 +259,24 @@ const getAllLeadStatusList = async (req, res )=> {
   } catch (error) {
     return error500(error);
   }
-  return res.json("Get All lead status list ");
-
+}
+//get all state list
+const getAllStateList = async (req, res) =>{
+  try {
+    const stateQuery = "SELECT * FROM state WHERE status = 1";
+    const stateResult = await pool.query(stateQuery);
+    return res.status(200).json({
+      status:200,
+      message:"State retrived successfully",
+      data:stateResult[0]
+    })
+  } catch (error) {
+    return error500(error,res);
+  }
 }
 module.exports = {
   createSuperAdmin,
   login,
-  getAllLeadStatusList
+  getAllLeadStatusList,
+  getAllStateList
 };
