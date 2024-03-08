@@ -106,8 +106,8 @@ const createCustomer = async (req, res) => {
   const customer_name = req.body.customer_name ? req.body.customer_name.trim() : "";
   const customer_email = req.body.customer_email ? req.body.customer_email.trim() : "";
   const customer_phone = req.body.customer_phone ? req.body.customer_phone : "";
-  const logoName = req.body.logoName ? req.body.logoName.trim() : "";
-  const logoBase64 = req.body.logoBase64 ? req.body.logoBase64.trim() : "";
+  const longLogoName = req.body.longLogoName ? req.body.longLogoName.trim() : "";
+  const longLogoBase64 = req.body.longLogoBase64 ? req.body.longLogoBase64.trim() : "";
   const customer_type_id = req.body.customer_type_id ? req.body.customer_type_id : "";
   const branch = req.body.branch ? req.body.branch.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
@@ -115,7 +115,6 @@ const createCustomer = async (req, res) => {
   const password = req.body.password ? req.body.password.trim() : "";
   const customerModulesDetails = req.body.customerModulesDetails ? req.body.customerModulesDetails : "";
   const untitled_id = req.companyData.untitled_id;
-
   if (!organization_name) {
     return error422("Organization Name is required.", res);
   } else if (!customer_name) {
@@ -124,10 +123,10 @@ const createCustomer = async (req, res) => {
     return error422("Customer Email is required.", res);
   } else if (!customer_phone) {
     return error422("Customer Phone is required.", res);
-  } else if (!logoName) {
-    return error422("Logo Name is required.", res);
-  } else if (!logoBase64) {
-    return error422("LogoBase64 is required.", res);
+  } else if (!longLogoName) {
+    return error422("Long Logo Name is required.", res);
+  } else if (!longLogoBase64) {
+    return error422(" Logn Logo Base64 is required.", res);
   } else if (!customer_type_id) {
     return error422("Customer Type ID is required.", res);
   } else if (!branch) {
@@ -178,12 +177,12 @@ const createCustomer = async (req, res) => {
   let logoFileName = "";
   let logoFilePath = "";
   // Generate logoFileName and logoFilePath if logo provided
-  if (logoName && logoBase64) {
+  if (longLogoName && longLogoBase64) {
     const timestamp = Date.now();
-    const fileExtension = path.extname(logoName);
+    const fileExtension = path.extname(longLogoName);
     logoFileName = `${customer_name}_${timestamp}${fileExtension}`;
     logoFilePath = path.join(__dirname, "..", "..", "..", "images", "logo", logoFileName);
-    const decodedLogo = Buffer.from(logoBase64, "base64");
+    const decodedLogo = Buffer.from(longLogoBase64, "base64");
     fs.writeFileSync(logoFilePath, decodedLogo);
   }
   // Attempt to obtain a database connection
@@ -375,8 +374,8 @@ const updateCustomer = async (req, res) => {
   const customer_name = req.body.customer_name ? req.body.customer_name.trim() : "";
   const customer_email = req.body.customer_email ? req.body.customer_email.trim() : "";
   const customer_phone = req.body.customer_phone ? req.body.customer_phone : "";
-  const logoName = req.body.logoName ? req.body.logoName.trim() : "";
-  const logoBase64 = req.body.logoBase64 ? req.body.logoBase64.trim() : "";
+  const longLogoName = req.body.longLogoName ? req.body.longLogoName.trim() : "";
+  const longLogoBase64 = req.body.longLogoBase64 ? req.body.longLogoBase64.trim() : "";
   const customer_type_id = req.body.customer_type_id ? req.body.customer_type_id : "";
   const branch = req.body.branch ? req.body.branch.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
@@ -392,10 +391,10 @@ const updateCustomer = async (req, res) => {
     return error422("Customer Email is required.", res);
   } else if (!customer_phone) {
     return error422("Customer Phone is required.", res);
-  } else if (!logoName) {
-    return error422("Logo Name is required.", res);
-  } else if (!logoBase64) {
-    return error422("LogoBase64 is required.", res);
+  } else if (!longLogoName) {
+    return error422("Long Logo Name is required.", res);
+  } else if (!longLogoBase64) {
+    return error422("Long LogoBase64 is required.", res);
   } else if (!customer_type_id) {
     return error422("Customer Type ID is required.", res);
   } else if (!branch) {
@@ -462,13 +461,13 @@ const updateCustomer = async (req, res) => {
     //  Generate logoFileName and logoFilePath if logo provided
     let logoFileName = "";
     let logoFilePath = "";
-    if (logoName && logoBase64) {
+    if (longLogoName && longLogoBase64) {
       const timestamp = Date.now();
-      const fileExtension = path.extname(logoName);
+      const fileExtension = path.extname(longLogoName);
       logoFileName = `${customer_name}_${timestamp}${fileExtension}`;
       logoFilePath = path.join(__dirname, "..", "..", "..", "images", "logo", logoFileName);
 
-      const decodedLogo = Buffer.from(logoBase64, "base64");
+      const decodedLogo = Buffer.from(longLogoBase64, "base64");
       fs.writeFileSync(logoFilePath, decodedLogo);
     }
     // Update the lead record with new data
