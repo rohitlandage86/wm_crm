@@ -20,9 +20,7 @@ error500 = (error, res) => {
 const addModules= async (req, res) => {
     const  module_name  = req.body.module_name  ? req.body.module_name.trim()  : '';
     const  description  = req.body.description  ? req.body.description.trim()  : '';
-    // const untitled_id  = req.companyData.untitled_id ;
-    const untitled_id = 1;
-   
+    const untitled_id  = req.companyData.untitled_id ;
  
     if (!module_name) {
         return error422("Module Name is required.", res);
@@ -31,8 +29,8 @@ const addModules= async (req, res) => {
     }
 
     //check wm_modules  already is exists or not
-    const isExistWMModulesQuery = `SELECT * FROM wm_modules WHERE LOWER(TRIM(module_name))= ?`;
-    const isExistWMModulesResult = await pool.query(isExistWMModulesQuery, [ module_name.toLowerCase()]);
+    const isExistWMModulesQuery = `SELECT * FROM wm_modules WHERE LOWER(TRIM(module_name))= ? AND untitled_id = ?`;
+    const isExistWMModulesResult = await pool.query(isExistWMModulesQuery, [ module_name.toLowerCase(), untitled_id]);
     if (isExistWMModulesResult[0].length > 0) {
         return error422(" Module Name is already exists.", res);
     } 
@@ -55,8 +53,7 @@ const addModules= async (req, res) => {
 // get wm_modules list...
 const getModules = async (req, res) => {
     const { page, perPage, key } = req.query;
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1 ;
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         let getWMModulesQuery = `SELECT m.*, u.untitled_id  FROM wm_modules m
@@ -86,9 +83,7 @@ const getModules = async (req, res) => {
         // Apply pagination if both page and perPage are provided
         if (page && perPage) {
             const totalResult = await pool.query(countQuery);
-            // console.log(totalResult);
             total = parseInt(totalResult[0][0].total);
-
             const start = (page - 1) * perPage;
             getWMModulesQuery += ` LIMIT ${perPage} OFFSET ${start}`;
         }
@@ -109,8 +104,6 @@ const getModules = async (req, res) => {
                 last_page: Math.ceil(total / perPage),
             };
         }
-        // const result = await query(getUsersQuery)
-
         return res.status(200).json(data);
     } catch (error) {
         return error500(error, res);
@@ -121,13 +114,14 @@ const getModules = async (req, res) => {
 // get wm_module  by id...
 const getModule = async (req, res) => {
     const moduleId = parseInt(req.params.id);
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         const wmmoduleQuery = `SELECT m.*, u.untitled_id  FROM  wm_modules m
         LEFT JOIN untitled u 
         ON m.untitled_id = u.untitled_id
-        WHERE m.module_id  = ?`;
-        const wmmoduleResult = await pool.query(wmmoduleQuery, [moduleId]);
+        WHERE m.module_id  = ? AND m.untitled_id = ?`;
+        const wmmoduleResult = await pool.query(wmmoduleQuery, [moduleId, untitled_id]);
         if (wmmoduleResult[0].length == 0) {
             return error422("Module Not Found.", res);
         }
@@ -146,8 +140,8 @@ const updateModule = async (req, res) => {
     const moduleId = parseInt(req.params.id);
     const module_name = req.body.module_name ? req.body.module_name.trim() : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1;
+    const untitled_id = req.companyData.untitled_id;
+
     if (!module_name) {
         return error422("Module Name is required.", res);
     } else if (!untitled_id) {
@@ -157,14 +151,14 @@ const updateModule = async (req, res) => {
     }
     try {
         // Check if module name exists
-        const wmmodulesQuery = "SELECT * FROM wm_modules WHERE module_id  = ?";
-        const wmmodulesResult = await pool.query(wmmodulesQuery, [moduleId]);
+        const wmmodulesQuery = "SELECT * FROM wm_modules WHERE module_id  = ? AND untitled_id = ?";
+        const wmmodulesResult = await pool.query(wmmodulesQuery, [moduleId, untitled_id]);
         if (wmmodulesResult[0].length == 0) {
             return error422("Module Name Not Found.", res);
         }
         // Check if the provided wm modules exists and is active 
-        const existingModulesQuery = "SELECT * FROM wm_modules WHERE LOWER(TRIM( module_name )) = ? AND module_id!=?";
-        const existingModulesResult = await pool.query(existingModulesQuery, [module_name.trim().toLowerCase(), moduleId]);
+        const existingModulesQuery = "SELECT * FROM wm_modules WHERE LOWER(TRIM( module_name )) = ? AND module_id!=? AND untitled_id = ?";
+        const existingModulesResult = await pool.query(existingModulesQuery, [module_name.toLowerCase(), moduleId, untitled_id]);
 
         if (existingModulesResult[0].length > 0) {
             return error422("Module Name already exists.", res);
@@ -189,52 +183,53 @@ const updateModule = async (req, res) => {
 }
 
 //status change of wm modules ...
-// const onStatusChange = async (req, res) => {
-//     const moduleId = parseInt(req.params.id);
-//     const status = parseInt(req.query.status); // Validate and parse the status parameter
-//     try {
-//         // Check if the wm modules exists
-//         const wmmodulesQuery = "SELECT * FROM wm_modules WHERE module_id = ?";
-//         const wmmodulesResult = await pool.query(wmmodulesQuery, [moduleId]);
+const onStatusChange = async (req, res) => {
+    const moduleId = parseInt(req.params.id);
+    const status = parseInt(req.query.status); // Validate and parse the status parameter
+    const untitled_id = req.companyData.untitled_id;
+    try {
+        // Check if the wm modules exists
+        const wmmodulesQuery = "SELECT * FROM wm_modules WHERE module_id = ? AND untitled_id = ?";
+        const wmmodulesResult = await pool.query(wmmodulesQuery, [moduleId, untitled_id]);
 
-//         if (wmmodulesResult[0].length == 0) {
-//             return res.status(404).json({
-//                 status: 404,
-//                 message: "Module Name not found.",
-//             });
-//         }
+        if (wmmodulesResult[0].length == 0) {
+            return res.status(404).json({
+                status: 404,
+                message: "Module Name not found.",
+            });
+        }
 
-//         // Validate the status parameter
-//         if (status !== 0 && status !== 1) {
-//             return res.status(400).json({
-//                 status: 400,
-//                 message: "Invalid status value. Status must be 0 (inactive) or 1 (active).",
-//             });
-//         }
+        // Validate the status parameter
+        if (status !== 0 && status !== 1) {
+            return res.status(400).json({
+                status: 400,
+                message: "Invalid status value. Status must be 0 (inactive) or 1 (active).",
+            });
+        }
 
-//         // Soft update the wm modules status
-//         const updateQuery = `
-//             UPDATE wm_modules
-//             SET status = ?
-//             WHERE module_id = ?
-//         `;
+        // Soft update the wm modules status
+        const updateQuery = `
+            UPDATE wm_modules
+            SET status = ?
+            WHERE module_id = ?
+        `;
 
-//         await pool.query(updateQuery, [status, module_id]);
+        await pool.query(updateQuery, [status, module_id]);
 
-//         const statusMessage = status === 1 ? "activated" : "deactivated";
+        const statusMessage = status === 1 ? "activated" : "deactivated";
 
-//         return res.status(200).json({
-//             status: 200,
-//             message: `Modules ${statusMessage} successfully.`,
-//         });
-//     } catch (error) {
-//         return error500(error,res);
-//     }
-// };
+        return res.status(200).json({
+            status: 200,
+            message: `Modules ${statusMessage} successfully.`,
+        });
+    } catch (error) {
+        return error500(error,res);
+    }
+};
 //get wm modules active...
 const getModulesWma = async (req, res) => {
-
-    let wmmodulesQuery = "SELECT m.*  FROM wm_modules m LEFT JOIN untitled u ON u.untitled_id = m.untitled_id WHERE  u.category=1 ORDER BY m.cts DESC";
+    const untitled_id = req.companyData.untitled_id;
+    let wmmodulesQuery = `SELECT m.*  FROM wm_modules m LEFT JOIN untitled u ON u.untitled_id = m.untitled_id WHERE  u.category=1 AND m.untitled_id = ${untitled_id} ORDER BY m.cts DESC`;
     try {
         const wmmodulesResult = await pool.query(wmmodulesQuery);
         const wm_modules = wmmodulesResult[0];
@@ -253,6 +248,6 @@ module.exports = {
     getModules,
     getModule,
     updateModule,
-    // onStatusChange,
+    onStatusChange,
     getModulesWma
 }

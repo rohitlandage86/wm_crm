@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const instructionsController = require("../../controllers/admin/instructions.controller");
-// const checkAuth = require("../middleware/check.auth");
 const checkAuth = require("../../middleware/check.auth");
 
 router.post('/',checkAuth,instructionsController.addInstructions);

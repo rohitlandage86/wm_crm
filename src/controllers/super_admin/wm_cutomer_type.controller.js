@@ -1,6 +1,4 @@
 const pool = require("../../../db");
-
-
 //errror 422 handler...
 error422 = (message, res) => {
     return res.status(422).json({
@@ -21,10 +19,8 @@ error500 = (error, res) => {
 const addCutomerType = async (req, res) => {
     const  customer_type  = req.body.customer_type  ? req.body.customer_type.trim()  : '';
     const  description  = req.body.description  ? req.body.description.trim()  : '';
-    // const untitled_id  = req.companyData.untitled_id ;
-    const untitled_id = 1;
-   
- 
+    const untitled_id  = req.companyData.untitled_id ;
+
     if (!customer_type) {
         return error422("Customer Type is required.", res);
     }  else if (!untitled_id) {
@@ -32,8 +28,8 @@ const addCutomerType = async (req, res) => {
     }
 
     //check wm_cutomer_type  already is exists or not
-    const isExistWMCutomerTypeQuery = `SELECT * FROM wm_cutomer_type WHERE LOWER(TRIM(customer_type))= ?`;
-    const isExistWMCutomerTypeResult = await pool.query(isExistWMCutomerTypeQuery, [ customer_type.toLowerCase()]);
+    const isExistWMCutomerTypeQuery = `SELECT * FROM wm_cutomer_type WHERE LOWER(TRIM(customer_type))= ? AND untitled_id = ?`;
+    const isExistWMCutomerTypeResult = await pool.query(isExistWMCutomerTypeQuery, [ customer_type.toLowerCase(), untitled_id]);
     if (isExistWMCutomerTypeResult[0].length > 0) {
         return error422(" Customer Type is already exists.", res);
     } 
@@ -56,9 +52,8 @@ const addCutomerType = async (req, res) => {
 // get wm_cutomer_type list...
 const getCutomerTypes = async (req, res) => {
     const { page, perPage, key } = req.query;
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1 ;
-
+    const untitled_id = req.companyData.untitled_id;
+    
     try {
         let getWMCutomerTypeQuery = `SELECT ct.*, u.untitled_id  FROM wm_cutomer_type ct
         LEFT JOIN untitled u 
@@ -87,9 +82,7 @@ const getCutomerTypes = async (req, res) => {
         // Apply pagination if both page and perPage are provided
         if (page && perPage) {
             const totalResult = await pool.query(countQuery);
-            // console.log(totalResult);
             total = parseInt(totalResult[0][0].total);
-
             const start = (page - 1) * perPage;
             getWMCutomerTypeQuery += ` LIMIT ${perPage} OFFSET ${start}`;
         }
@@ -110,8 +103,6 @@ const getCutomerTypes = async (req, res) => {
                 last_page: Math.ceil(total / perPage),
             };
         }
-        // const result = await query(getUsersQuery)
-
         return res.status(200).json(data);
     } catch (error) {
         return error500(error, res);
@@ -122,13 +113,14 @@ const getCutomerTypes = async (req, res) => {
 // get wm_cutomer_type  by id...
 const getCutomerType = async (req, res) => {
     const cutomertypeId = parseInt(req.params.id);
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         const wmcutomertypeQuery = `SELECT ct.*, u.untitled_id  FROM  wm_cutomer_type ct
         LEFT JOIN untitled u 
         ON ct.untitled_id = u.untitled_id
-        WHERE ct.customer_type_id  = ?`;
-        const wmcutomertypeResult = await pool.query(wmcutomertypeQuery, [cutomertypeId]);
+        WHERE ct.customer_type_id  = ? AND ct.untitled_id = ?`;
+        const wmcutomertypeResult = await pool.query(wmcutomertypeQuery, [cutomertypeId, untitled_id ]);
         if (wmcutomertypeResult[0].length == 0) {
             return error422("Cutomer Type Not Found.", res);
         }
@@ -147,8 +139,8 @@ const updateCutomerType = async (req, res) => {
     const customertypeId = parseInt(req.params.id);
     const customer_type = req.body.customer_type ? req.body.customer_type.trim() : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    // const untitled_id = req.companyData.untitled_id;
-    const untitled_id = 1;
+    const untitled_id = req.companyData.untitled_id;
+
     if (!customer_type) {
         return error422("Customer Type is required.", res);
     } else if (!untitled_id) {
@@ -158,14 +150,14 @@ const updateCutomerType = async (req, res) => {
     }
     try {
         // Check if wm cutomer type exists
-        const customertypeQuery = "SELECT * FROM wm_cutomer_type WHERE customer_type_id  = ?";
-        const customertypeResult = await pool.query(customertypeQuery, [customertypeId]);
+        const customertypeQuery = "SELECT * FROM wm_cutomer_type WHERE customer_type_id  = ? AND untitled_id = ? ";
+        const customertypeResult = await pool.query(customertypeQuery, [customertypeId, untitled_id ]);
         if (customertypeResult[0].length == 0) {
             return error422("Customer Type Not Found.", res);
         }
         // Check if the provided cutomer type exists and is active 
-        const existingCustomerTypeQuery = "SELECT * FROM wm_cutomer_type WHERE LOWER(TRIM( customer_type )) = ? AND customer_type_id!=?";
-        const existingCustomerTypeResult = await pool.query(existingCustomerTypeQuery, [customer_type.trim().toLowerCase(), customertypeId]);
+        const existingCustomerTypeQuery = "SELECT * FROM wm_cutomer_type WHERE LOWER(TRIM( customer_type )) = ? AND customer_type_id!=? AND untitled_id = ?";
+        const existingCustomerTypeResult = await pool.query(existingCustomerTypeQuery, [customer_type.trim().toLowerCase(), customertypeId, untitled_id]);
 
         if (existingCustomerTypeResult[0].length > 0) {
             return error422("Customer Type already exists.", res);
@@ -190,52 +182,53 @@ const updateCutomerType = async (req, res) => {
 }
 
 //status change of Customer Type ...
-// const onStatusChange = async (req, res) => {
-//     const customertypeId = parseInt(req.params.id);
-//     const status = parseInt(req.query.status); // Validate and parse the status parameter
-//     try {
-//         // Check if the Customer Type  exists
-//         const customertypeQuery = "SELECT * FROM wm_cutomer_type WHERE customer_type_id = ?";
-//         const customertypeResult = await pool.query(customertypeQuery, [customertypeId]);
+const onStatusChange = async (req, res) => {
+    const customerTypeId = parseInt(req.params.id);
+    const status = parseInt(req.query.status); // Validate and parse the status parameter
+    const untitled_id = req.body.untitled_id ;
+    try {
+        // Check if the Customer Type  exists
+        const customertypeQuery = "SELECT * FROM wm_cutomer_type WHERE customer_type_id = ? AND untitled_id = ?";
+        const customertypeResult = await pool.query(customertypeQuery, [customerTypeId, untitled_id]);
 
-//         if (customertypeResult[0].length == 0) {
-//             return res.status(404).json({
-//                 status: 404,
-//                 message: "Customer Type not found.",
-//             });
-//         }
+        if (customertypeResult[0].length == 0) {
+            return res.status(404).json({
+                status: 404,
+                message: "Customer Type not found.",
+            });
+        }
 
-//         // Validate the status parameter
-//         if (status !== 0 && status !== 1) {
-//             return res.status(400).json({
-//                 status: 400,
-//                 message: "Invalid status value. Status must be 0 (inactive) or 1 (active).",
-//             });
-//         }
+        // Validate the status parameter
+        if (status !== 0 && status !== 1) {
+            return res.status(400).json({
+                status: 400,
+                message: "Invalid status value. Status must be 0 (inactive) or 1 (active).",
+            });
+        }
 
-//         // Soft update the wm_cutomer_type status
-//         const updateQuery = `
-//             UPDATE wm_cutomer_type
-//             SET status = ?
-//             WHERE customer_type_id = ?
-//         `;
+        // Soft update the wm_cutomer_type status
+        const updateQuery = `
+            UPDATE wm_cutomer_type
+            SET status = ?
+            WHERE customer_type_id = ?
+        `;
 
-//         await pool.query(updateQuery, [status, customertypeId]);
+        await pool.query(updateQuery, [status, customertypeId]);
 
-//         const statusMessage = status === 1 ? "activated" : "deactivated";
+        const statusMessage = status === 1 ? "activated" : "deactivated";
 
-//         return res.status(200).json({
-//             status: 200,
-//             message: `Customer Type ${statusMessage} successfully.`,
-//         });
-//     } catch (error) {
-//         return error500(error,res);
-//     }
-// };
+        return res.status(200).json({
+            status: 200,
+            message: `Customer Type ${statusMessage} successfully.`,
+        });
+    } catch (error) {
+        return error500(error,res);
+    }
+};
 //get Customer Type active...
 const getCustomerTypeWma = async (req, res) => {
-
-    let customertypeQuery = "SELECT ct.*  FROM wm_cutomer_type ct LEFT JOIN untitled u ON u.untitled_id = ct.untitled_id WHERE  u.category=1 ORDER BY ct.cts DESC";
+    const untitled_id = req.companyData.untitled_id;
+    let customertypeQuery = `SELECT ct.*  FROM wm_cutomer_type ct LEFT JOIN untitled u ON u.untitled_id = ct.untitled_id WHERE  u.category=1 AND  ct.untitled_id = ${untitled_id} ORDER BY ct.cts DESC`;
     try {
         const customertypeResult = await pool.query(customertypeQuery);
         const customer_type = customertypeResult[0];
@@ -254,6 +247,6 @@ module.exports = {
     getCutomerTypes,
     getCutomerType,
     updateCutomerType,
-    // onStatusChange,
+    onStatusChange,
     getCustomerTypeWma
 }

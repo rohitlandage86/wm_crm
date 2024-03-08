@@ -173,9 +173,6 @@ const createCustomer = async (req, res) => {
   );
   const wm_customer_header = isExistCustomerHeaderResult[0];
   if (wm_customer_header.length > 0) {
-    if (logoFilePath && fs.existsSync(logoFilePath)) {
-      fs.unlinkSync(logoFilePath);
-    }
     return error422("Customer Email And Phone Number is already exists.", res);
   }
   let logoFileName = "";

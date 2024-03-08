@@ -1,14 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const leadheaderController = require("../../controllers/receptionist/leads.controller");
-// const checkAuth = require("../middleware/check.auth");
+const checkAuth = require("../../middleware/check.auth");
 
-router.post('/',leadheaderController.addleads);
-router.get('/',leadheaderController.getLeadHeaders);
-router.get('/wma/',leadheaderController.getLeadHeaderWma);
-router.get('/lf/',leadheaderController.getLeadFooters);
-router.get('/:id',leadheaderController.getLeads);
-router.put('/:id',leadheaderController.updateLeads);
-router.patch('/:id',leadheaderController.onStatusChange);
-router.delete('/:id',leadheaderController.deleteLeadFooter);
+router.post('/',checkAuth,leadheaderController.addleads);
+router.get('/',checkAuth,leadheaderController.getLeadHeaders);
+router.get('/wma/',checkAuth,leadheaderController.getLeadHeaderWma);
+router.get('/lead-follow-up',checkAuth,leadheaderController.getFollowUpLeadsList)
+// router.get('/lf/',checkAuth,leadheaderController.getLeadFooters);
+router.get('/:id',checkAuth,leadheaderController.getLeadsHeaderById);
+router.put('/:id',checkAuth,leadheaderController.updateLeads);
+router.patch('/:id',checkAuth,leadheaderController.onStatusChange);
+// router.delete('/:id',checkAuth,leadheaderController.deleteLeadFooter);
 module.exports = router
