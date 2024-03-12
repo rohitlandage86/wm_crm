@@ -229,7 +229,15 @@ const onStatusChange = async (req, res) => {
 //get title active...
 const getTitleWma = async (req, res) => {
     const untitled_id = req.companyData.untitled_id ;
-    let titleQuery = `SELECT t.*  FROM title t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=2 AND t.untitled_id = ${untitled_id} ORDER BY t.cts DESC`;
+
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id =  untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId =  customerResult[0][0].untitled_id;
+
+    let titleQuery = `SELECT t.*  FROM title t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=2 AND t.untitled_id = ${untitledId} ORDER BY t.cts DESC`;
     try {
         const titleResult = await pool.query(titleQuery);
         const title = titleResult[0];

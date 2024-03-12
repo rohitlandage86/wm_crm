@@ -236,7 +236,15 @@ const onStatusChange = async (req, res) => {
 //get refered_by active...
 const getReferedByWma = async (req, res) => {
     const untitled_id = req.companyData.untitled_id ;
-    let ReferedByQuery = `SELECT r.*  FROM refered_by r LEFT JOIN untitled u ON u.untitled_id = r.untitled_id WHERE r.status = 1 AND u.category=2 AND r.untitled_id = ${untitled_id} ORDER BY r.cts DESC`;
+
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id =  untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId =  customerResult[0][0].untitled_id;
+
+    let ReferedByQuery = `SELECT r.*  FROM refered_by r LEFT JOIN untitled u ON u.untitled_id = r.untitled_id WHERE r.status = 1 AND u.category=2 AND r.untitled_id = ${untitledId} ORDER BY r.cts DESC`;
     try {
         const ReferedByResult = await pool.query(ReferedByQuery);
         const refered_by = ReferedByResult[0];

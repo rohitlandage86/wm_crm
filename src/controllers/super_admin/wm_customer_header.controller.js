@@ -108,10 +108,12 @@ const createCustomer = async (req, res) => {
   const customer_phone = req.body.customer_phone ? req.body.customer_phone : "";
   const longLogoName = req.body.longLogoName ? req.body.longLogoName.trim() : "";
   const longLogoBase64 = req.body.longLogoBase64 ? req.body.longLogoBase64.trim() : "";
+  const shortLogoName = req.body.shortLogoName ? req.body.shortLogoName.trim() : "";
+  const shortLogoBase64 = req.body.shortLogoBase64 ? req.body.shortLogoBase64.trim() : "";
   const customer_type_id = req.body.customer_type_id ? req.body.customer_type_id : "";
   const branch = req.body.branch ? req.body.branch.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
-  const state = req.body.state ? req.body.state.trim() : "";
+  const state_id = req.body.state_id ? req.body.state_id.trim() : "";
   const password = req.body.password ? req.body.password.trim() : "";
   const customerModulesDetails = req.body.customerModulesDetails ? req.body.customerModulesDetails : "";
   const untitled_id = req.companyData.untitled_id;
@@ -124,17 +126,21 @@ const createCustomer = async (req, res) => {
   } else if (!customer_phone) {
     return error422("Customer Phone is required.", res);
   } else if (!longLogoName) {
-    return error422("Long Logo Name is required.", res);
+    return error422("Long logo name is required.", res);
   } else if (!longLogoBase64) {
-    return error422(" Logn Logo Base64 is required.", res);
+    return error422(" Long logo base64 is required.", res);
+  } else if (!shortLogoName) {
+    return error422("Short logo name is required.", res);
+  } else if (!shortLogoBase64) {
+    return error422("Short logo base64 is required.", res);
   } else if (!customer_type_id) {
     return error422("Customer Type ID is required.", res);
   } else if (!branch) {
     return error422("Branch is required.", res);
   } else if (!city) {
     return error422("City is required.", res);
-  } else if (!state) {
-    return error422("State is required.", res);
+  } else if (!state_id) {
+    return error422("State id is required.", res);
   } else if (!password) {
     return error422("Password is required.", res);
   } else if (!untitled_id) {
@@ -174,16 +180,27 @@ const createCustomer = async (req, res) => {
   if (wm_customer_header.length > 0) {
     return error422("Customer Email And Phone Number is already exists.", res);
   }
-  let logoFileName = "";
-  let logoFilePath = "";
-  // Generate logoFileName and logoFilePath if logo provided
+  let longLogoFileName = "";
+  let longLogoFilePath = "";
+  // Generate long logo FileName and long logo FilePath if long logo provided
   if (longLogoName && longLogoBase64) {
     const timestamp = Date.now();
     const fileExtension = path.extname(longLogoName);
-    logoFileName = `${customer_name}_${timestamp}${fileExtension}`;
-    logoFilePath = path.join(__dirname, "..", "..", "..", "images", "logo", logoFileName);
+    longLogoFileName = `${customer_name}_${timestamp}${fileExtension}`;
+    longLogoFilePath = path.join(__dirname, "..", "..", "..", "images", "logo", longLogoFileName);
     const decodedLogo = Buffer.from(longLogoBase64, "base64");
-    fs.writeFileSync(logoFilePath, decodedLogo);
+    fs.writeFileSync(longLogoFilePath, decodedLogo);
+  }
+  let shortLogoFileName = "";
+  let shortLogoFilePath = "";
+  //  Generate short logo FileName and short logo FilePath if short provided
+  if (shortLogoName && shortLogoBase64) {
+    const timestamp = Date.now();
+    const fileExtension = path.extname(shortLogoName);
+    shortLogoFileName = `${customer_name}_${timestamp}${fileExtension}`;
+    shortLogoFilePath = path.join(__dirname, "..", "..", "..", "images", "short_logo", shortLogoFileName);
+    const decodedLogo = Buffer.from(shortLogoBase64, "base64");
+    fs.writeFileSync(shortLogoFilePath, decodedLogo);
   }
   // Attempt to obtain a database connection
   let connection = await getConnection();
@@ -192,14 +209,14 @@ const createCustomer = async (req, res) => {
     // Start a transaction
     await connection.beginTransaction();
     // Insert wm_customer_header details
-    const insertCustomerHeaderQuery = "INSERT INTO wm_customer_header (organization_name, customer_name, customer_email, customer_phone, logo, customer_type_id, untitled_id) VALUES (?,?,?,?,?,?,?)";
-    let insertCustomerHeaderValues = [organization_name, customer_name, customer_email, customer_phone, logoFileName, customer_type_id, untitled_id];
+    const insertCustomerHeaderQuery = "INSERT INTO wm_customer_header (organization_name, customer_name, customer_email, customer_phone, logo, short_logo, customer_type_id, untitled_id) VALUES (?,?,?,?,?,?,?,?)";
+    let insertCustomerHeaderValues = [organization_name, customer_name, customer_email, customer_phone, longLogoFileName, shortLogoFileName, customer_type_id, untitled_id];
     const insertCustomerHeaderResult = await connection.query(insertCustomerHeaderQuery, insertCustomerHeaderValues);
     const customer_id = insertCustomerHeaderResult[0].insertId;
 
     // Insert wm_customer_branch details
-    const insertCustomerBranchQuery = "INSERT INTO wm_customer_branch (customer_id, branch, city, state, untitled_id) VALUES (?,?,?,?,?)";
-    const insertCustomerBranchValues = [customer_id, branch, city, state, untitled_id];
+    const insertCustomerBranchQuery = "INSERT INTO wm_customer_branch (customer_id, branch, city, state_id, untitled_id) VALUES (?,?,?,?,?)";
+    const insertCustomerBranchValues = [customer_id, branch, city, state_id, untitled_id];
     const insertCustomerBranchResult = await connection.query(insertCustomerBranchQuery, insertCustomerBranchValues);
     const branch_id = insertCustomerBranchResult[0].insertId;
 
@@ -218,8 +235,9 @@ const createCustomer = async (req, res) => {
         const isExistCustomerModulesQuery = `SELECT * FROM wm_customer_modules WHERE TRIM(customer_id)= ? AND TRIM(module_id) = ?`;
         const isExistCustomerModulesResult = await pool.query(isExistCustomerModulesQuery, [customer_id, module_id]);
         if (isExistCustomerModulesResult[0].length > 0) {
-          if (logoFilePath && fs.existsSync(logoFilePath)) {
-            fs.unlinkSync(logoFilePath);
+          if ((longLogoFilePath && fs.existsSync(longLogoFilePath)) ||(shortLogoFilePath && fs.existsSync(shortLogoFilePath)) ) {
+            fs.unlinkSync(longLogoFilePath);
+            fs.unlinkSync(shortLogoFilePath);
           }
           return error422("Customer Id And Module Id is already exists.", res);
         }
@@ -232,8 +250,9 @@ const createCustomer = async (req, res) => {
         } catch (error) {
           // Handle errors
           await connection.rollback();
-          if (logoFilePath && fs.existsSync(logoFilePath)) {
-            fs.unlinkSync(logoFilePath);
+          if ((longLogoFilePath && fs.existsSync(longLogoFilePath)) ||(shortLogoFilePath && fs.existsSync(shortLogoFilePath)) ) {
+            fs.unlinkSync(longLogoFilePath);
+            fs.unlinkSync(shortLogoFilePath);
           }
           return error500(error, res);
         }
@@ -266,8 +285,9 @@ const createCustomer = async (req, res) => {
     // Handle errors
     await connection.rollback();
     // If logo was uploaded before error occurred, delete the uploaded image
-    if (logoFilePath && fs.existsSync(logoFilePath)) {
-      fs.unlinkSync(logoFilePath);
+    if ((longLogoFilePath && fs.existsSync(longLogoFilePath)) ||(shortLogoFilePath && fs.existsSync(shortLogoFilePath)) ) {
+      fs.unlinkSync(longLogoFilePath);
+      fs.unlinkSync(shortLogoFilePath);
     }
     return error500(error, res);
   } finally {
@@ -281,11 +301,13 @@ const getCustomers = async (req, res) => {
   const untitled_id = req.companyData.untitled_id;
 
   try {
-    let getCustomerQuery = `SELECT c.*, u.untitled_id, cb.branch_id, cb.branch, cb.city, cb.state   FROM wm_customer_header c
+    let getCustomerQuery = `SELECT c.*, u.untitled_id, cb.branch_id, cb.branch, cb.city, cb.state_id, s.state_name   FROM wm_customer_header c
       LEFT JOIN untitled u 
       ON c.untitled_id = u.untitled_id
       LEFT JOIN wm_customer_branch cb
       ON c.customer_id = cb.customer_id
+      LEFT JOIN state s
+      ON s.state_id = cb.state_id
       WHERE c.untitled_id = ${untitled_id}`;
 
     let countQuery = `SELECT COUNT(*) AS total FROM wm_customer_header c
@@ -293,6 +315,8 @@ const getCustomers = async (req, res) => {
       ON c.untitled_id = u.untitled_id
       LEFT JOIN wm_customer_branch cb
       ON c.customer_id = cb.customer_id
+      LEFT JOIN state s
+      ON s.state_id = cb.state_id
       WHERE c.untitled_id = ${untitled_id}`;
     if (key) {
       const lowercaseKey = key.toLowerCase().trim();
@@ -344,9 +368,11 @@ const getCustomers = async (req, res) => {
 const getCustomer = async (req, res) => {
   const customerheaderId = parseInt(req.params.id);
   try {
-    const customerheaderQuery = `SELECT c.*, cb.branch_id, cb.branch, cb.city, cb.state  FROM  wm_customer_header c
+    const customerheaderQuery = `SELECT c.*, cb.branch_id, cb.branch, cb.city, cb.state_id, s.state_name  FROM  wm_customer_header c
           LEFT JOIN wm_customer_branch cb
           ON c.customer_id = cb.customer_id
+          LEFT JOIN state s
+          ON s.state_id = cb.state_id
           WHERE c.customer_id  = ?`;
     const customerheaderResult = await pool.query(customerheaderQuery, [customerheaderId]);
 
@@ -379,7 +405,7 @@ const updateCustomer = async (req, res) => {
   const customer_type_id = req.body.customer_type_id ? req.body.customer_type_id : "";
   const branch = req.body.branch ? req.body.branch.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
-  const state = req.body.state ? req.body.state.trim() : "";
+  const state_id = req.body.state_id ? req.body.state_id.trim() : null;
   const customerModulesDetails = req.body.customerModulesDetails ? req.body.customerModulesDetails : "";
   const untitled_id = req.companyData.untitled_id;
 
@@ -401,8 +427,8 @@ const updateCustomer = async (req, res) => {
     return error422("Branch is required.", res);
   } else if (!city) {
     return error422("City is required.", res);
-  } else if (!state) {
-    return error422("State is required.", res);
+  } else if (!state_id) {
+    return error422("State id is required.", res);
   } else if (!untitled_id) {
     return error422("Untitled ID is required.", res);
   } else if (!customerId) {
@@ -488,11 +514,11 @@ const updateCustomer = async (req, res) => {
                 UPDATE wm_customer_branch
                 SET   customer_id = ?,
                 branch = ?,
-                state = ?,
+                state_id = ?,
                 untitled_id = ?, mts=?
                 WHERE branch = ?
             `;
-    await pool.query(UpdateQuery, [customerId,branch,state,untitled_id,nowDate,branch]);
+    await pool.query(UpdateQuery, [customerId,branch,state_id,untitled_id,nowDate,branch]);
 
     if (customerModulesDetails) {
       for (const row of customerModulesDetails) {

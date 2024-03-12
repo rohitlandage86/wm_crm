@@ -239,7 +239,15 @@ const onStatusChange = async (req, res) => {
 //get diagnosis active...
 const getDiagnosisWma = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
-    let diagnosisQuery = `SELECT d.*  FROM diagnosis d LEFT JOIN untitled u ON u.untitled_id = d.untitled_id WHERE d.status = 1 AND u.category=2 AND d.untitled_id = ${untitled_id} ORDER BY d.cts DESC`;
+
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id =  untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId =  customerResult[0][0].untitled_id;
+
+    let diagnosisQuery = `SELECT d.*  FROM diagnosis d LEFT JOIN untitled u ON u.untitled_id = d.untitled_id WHERE d.status = 1 AND u.category=2 AND d.untitled_id = ${untitledId} ORDER BY d.cts DESC`;
     try {
         const diagnosisResult = await pool.query(diagnosisQuery);
         const diagnosis = diagnosisResult[0];

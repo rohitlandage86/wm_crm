@@ -1,13 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const patientregistrationController = require("../../controllers/admin/patient_registration.controller");
-// const checkAuth = require("../middleware/check.auth");
+const checkAuth = require("../../middleware/check.auth");
 
-router.post('/',patientregistrationController.addPatientRegistration);
-router.get('/',patientregistrationController.getPatientRegistrations);
-router.get('/wma/',patientregistrationController.getPatientRegistrationWma);
-router.get('/pvl/',patientregistrationController.getPatientVisitLists);
-router.get('/:id',patientregistrationController.getPatientRegistration);
-router.put('/:id',patientregistrationController.updatePatientRegistration);
-router.patch('/:id',patientregistrationController.onStatusChange);
+router.post('/',checkAuth,patientregistrationController.addPatientRegistration);
+router.get('/',checkAuth,patientregistrationController.getPatientRegistrations);
+router.get('/wma/',checkAuth,patientregistrationController.getPatientRegistrationWma);
+router.get('/patient-visit-list/',checkAuth,patientregistrationController.getPatientVisitLists);
+router.get('/:id',checkAuth,patientregistrationController.getPatientRegistration);
+router.put('/:id',checkAuth,patientregistrationController.updatePatientRegistration);
+router.patch('/:id',checkAuth,patientregistrationController.onStatusChange);
+router.put('/patient-revisit/:id',checkAuth,patientregistrationController.patientRevisit);
 module.exports = router 

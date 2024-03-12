@@ -87,72 +87,6 @@ const createSuperAdmin = async (req, res) => {
   }
 };
 
-//Login  super admin...
-// const superadminLogin = async (req, res) => {
-//   const email_id = req.body.email_id ? req.body.email_id.trim() : "";
-//   const password = req.body.password ? req.body.password.trim() : "";
-
-//   if (!email_id) {
-//     return error422("Email Id is Required.", res);
-//   } else if (!password) {
-//     return error422("Password is Required.", res);
-//   }
-//   try {
-
-//     // Check if the untiled with the provided email id exists and is active
-//     const checkUntitledQuery =
-//       "SELECT * FROM untitled WHERE LOWER(TRIM(email_id)) = ?";
-//     const checkUntitledResult = await pool.query(checkUntitledQuery, [
-//       email_id,
-//     ]);
-//     const untitled = checkUntitledResult[0][0];
-//     if (!untitled) {
-//       return error422("Authentication failed. Contact to admin.", res);
-//     }
-//     try {
-//       const isPasswordValid = await bcrypt.compare(
-//         password,
-//         untitled.extenstions
-//       );
-
-//       if (!isPasswordValid) {
-//         return error422("Password worng.", res);
-//       }
-
-//       // Generate a JWT token
-//       const token = jwt.sign(
-//         {
-//           untitled_id: untitled.untitled_id,
-//           email_id: untitled.email_id,
-//         },
-//         "secret_this_should_be", // Use environment variable for secret key
-//         { expiresIn: "1h" }
-//       );
-//       const untitledDataQuery = `SELECT untitled_id , email_id,category  FROM  untitled 
-//     WHERE untitled_id = ? `;
-//       let untitledDataResult = await pool.query(untitledDataQuery,[untitled.untitled_id]);
-
-
-//       // Commit the transaction
-//       return res.status(200).json({
-//         status: 200,
-//         message: "Authentication successfully",
-//         token: token,
-//         expiresIn: 3600, // 1 hour in seconds,
-//         data: untitledDataResult[0][0],
-//         category: untitled.category,
-//       });
-//     } catch (error) {
-//       throw error; // Rethrow the error to be caught by the outer try-catch block
-//     }
-//   } catch (error) {
-//     return res.status(500).json({
-//       status: 500,
-//       message: "Internal Server Error",
-//       error: error,
-//     });
-//   }
-// };
 const login = async (req, res) => {
   const email_id = req.body.email_id ? req.body.email_id.trim() : '';
   const password = req.body.password ? req.body.password.trim() : '';
@@ -187,7 +121,7 @@ const login = async (req, res) => {
     } else if (untitled.category == 2) {
       //get customer info
       const customerInfoQuery = 
-      `SELECT u.email_id, u.category, c.*, cb.*, ct.customer_type, u.untitled_id
+      `SELECT u.email_id, u.category, c.*, cb.*, ct.customer_type, u.untitled_id, s.state_name
       FROM  untitled u 
       LEFT JOIN wm_customer_header c 
       ON c.customer_id = u.customer_id 
@@ -195,6 +129,8 @@ const login = async (req, res) => {
       ON cb.branch_id = u.branch_id 
       LEFT JOIN wm_cutomer_type ct
       ON ct.customer_type_id  = c.customer_type_id 
+      LEFT JOIN state s
+      ON s.state_id  = cb.state_id 
       WHERE u.untitled_id = ? `;
       const customerInfoResult = await pool.query(customerInfoQuery,[untitled.untitled_id]);
       untitledDataResult = customerInfoResult[0][0];
@@ -208,7 +144,7 @@ const login = async (req, res) => {
       untitledDataResult['customerModelDetails'] = customerModuleInfoResult[0]
     } else if (untitled.category ==3){
       const employeeInfoQuery = 
-      `SELECT u.email_id, u.category, u.untitled_id, u.employee_id, u.customer_id, cb.branch, cb.city, cb.state, cb.branch_id, e.name, e.designation_id, d.designation_name
+      `SELECT u.email_id, u.category, u.untitled_id, u.employee_id, u.customer_id, cb.branch, cb.city, cb.state, s.state_name, cb.branch_id, e.name, e.designation_id, d.designation_name
       FROM  untitled u 
       LEFT JOIN employee e 
       ON e.employee_id = u.employee_id
@@ -216,6 +152,8 @@ const login = async (req, res) => {
       ON cb.branch_id = u.branch_id 
       LEFT JOIN designation d 
       ON d.designation_id = e.designation_id 
+      LEFT JOIN state s
+      ON s.state_id  = cb.state_id 
       WHERE u.untitled_id = ? `;
       const employeeInfoResult = await pool.query(employeeInfoQuery,[untitled.untitled_id]);
       untitledDataResult = employeeInfoResult[0][0];

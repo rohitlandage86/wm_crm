@@ -7,7 +7,7 @@ router.post('/',checkAuth,leadheaderController.addleads);
 router.get('/',checkAuth,leadheaderController.getLeadHeaders);
 router.get('/wma/',checkAuth,leadheaderController.getLeadHeaderWma);
 router.get('/lead-follow-up',checkAuth,leadheaderController.getFollowUpLeadsList)
-// router.get('/lf/',checkAuth,leadheaderController.getLeadFooters);
+// router.get('/lf/',checkAuth,leadheaderController.get LeadFooters);
 router.get('/:id',checkAuth,leadheaderController.getLeadsHeaderById);
 router.put('/:id',checkAuth,leadheaderController.updateLeads);
 router.patch('/:id',checkAuth,leadheaderController.onStatusChange);

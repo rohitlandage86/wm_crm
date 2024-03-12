@@ -4,7 +4,8 @@ const bodyParser=require("body-parser");
 const app=express();
 const path = require("path");   
 app.use(express.json({ limit: '50mb' }));  
-app.use("/images/logo", express.static(path.join(__dirname, "images", "logo")));
+app.use("/images", express.static(path.join(__dirname, "images")));
+app.use(express.static('public')); // Assuming 'public' is the directory containing 'images'
 
 
 //opd route
