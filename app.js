@@ -29,6 +29,7 @@ const patient_registrationRoute = require("./src/routes/admin/patient_registrati
 
 //receptionist routes
 const lead_headerRoute = require("./src/routes/receptionist/leads.route");
+const receptionistDashboardRoute = require("./src/routes/receptionist/receptionist-dashboard.route");
 
 //Super admin routes
 const wm_customer_headerRoute = require("./src/routes/super_admin/wm_customer_header.route");
@@ -71,6 +72,7 @@ app.use('/api/patient_registration',patient_registrationRoute);
 
 //receptionist route
 app.use('/api/lead_header',lead_headerRoute);
+app.use('/api/receptionist-dashboard',receptionistDashboardRoute);
 
 //Super Admin route 
 app.use('/api/wm_customer_header',wm_customer_headerRoute);

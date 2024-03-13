@@ -1,5 +1,5 @@
 const pool = require("../../../db");
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt'); 
 const jwt = require("jsonwebtoken");
 //error 422 handle...
 error422 = (message, res) => {
@@ -144,7 +144,7 @@ const login = async (req, res) => {
       untitledDataResult['customerModelDetails'] = customerModuleInfoResult[0]
     } else if (untitled.category ==3){
       const employeeInfoQuery = 
-      `SELECT u.email_id, u.category, u.untitled_id, u.employee_id, u.customer_id, cb.branch, cb.city, cb.state, s.state_name, cb.branch_id, e.name, e.designation_id, d.designation_name
+      `SELECT u.email_id, u.category, u.untitled_id, u.employee_id, u.customer_id, cb.branch, cb.city, cb.state_id, s.state_name, cb.branch_id, e.name, e.designation_id, d.designation_name
       FROM  untitled u 
       LEFT JOIN employee e 
       ON e.employee_id = u.employee_id

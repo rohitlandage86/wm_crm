@@ -451,15 +451,14 @@ const getPatientVisitLists = async (req, res) => {
     ON pr.mrno = p.mrno
     LEFT JOIN entity e
     ON e.entity_id = pr.entity_id
-    WHERE p.visit_date = '${visit_date}'
-    `;
+    WHERE p.visit_date = '${visit_date}' AND p.is_checked = 0 AND pr.customer_id = ${customer_id}`;
 
     let countQuery = `SELECT COUNT(*) AS total  FROM patient_visit_list p 
     LEFT JOIN patient_registration pr 
     ON pr.mrno = p.mrno
     LEFT JOIN entity e
     ON e.entity_id = pr.entity_id
-    WHERE p.visit_date = '${visit_date}' `;
+    WHERE p.visit_date = '${visit_date}' AND p.is_checked = 0 AND pr.customer_id = ${customer_id}`;
 
     if (key) {
       const lowercaseKey = key.toLowerCase().trim();
