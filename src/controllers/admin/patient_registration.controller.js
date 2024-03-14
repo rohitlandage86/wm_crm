@@ -82,7 +82,7 @@ const addPatientRegistration = async (req, res) => {
     return error422("Amount is required.", res);
   } else if (!refered_by_id) {
     return error422("Refered By ID is required.", res);
-  } else if (!payment_type) { 
+  } else if (!payment_type) {
     return error422("Payment Type is required.", res);
   } else if (!untitled_id) {
     return error422("Untitled ID is required.", res);
@@ -113,7 +113,7 @@ const addPatientRegistration = async (req, res) => {
     const insertPatientRegistrationValues = [entity_id, registration_date, mrno_entity_series, patient_name, gender, age, mobile_no, address, city, state_id, source_of_patient_id, employee_id, height, weight, bmi, amount, refered_by_id, customer_id, untitled_id];
     const patient_registrationResult = await connection.query(insertPatientRegistrationQuery, insertPatientRegistrationValues);
     const mrno = patient_registrationResult[0].insertId;
-    
+
     //insert into patient_visit_list 
     const insertPatientVisitListQuery = 'INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)';
     const insertPatientVisitListValues = [mrno, 'FIRST_VISIT', registration_date];
@@ -271,23 +271,22 @@ const getPatientRegistration = async (req, res) => {
 const updatePatientRegistration = async (req, res) => {
   const mrno = parseInt(req.params.id);
   const entity_id = req.body.entity_id ? req.body.entity_id : "";
-  const registration_date = req.body.registration_date? req.body.registration_date: "";
-  const mrno_entity_series = req.body.mrno_entity_series? req.body.mrno_entity_series.trim(): "";
-  const patient_name = req.body.patient_name? req.body.patient_name.trim(): "";
+  const registration_date = req.body.registration_date ? req.body.registration_date : "";
+  const mrno_entity_series = req.body.mrno_entity_series ? req.body.mrno_entity_series.trim() : "";
+  const patient_name = req.body.patient_name ? req.body.patient_name.trim() : "";
   const gender = req.body.gender ? req.body.gender.trim() : "";
   const age = req.body.age ? req.body.age : "";
   const mobile_no = req.body.mobile_no ? req.body.mobile_no : "";
   const address = req.body.address ? req.body.address.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
   const state_id = req.body.state_id ? req.body.state_id : "";
-  const source_of_patient_id = req.body.source_of_patient_id? req.body.source_of_patient_id: "";
+  const source_of_patient_id = req.body.source_of_patient_id ? req.body.source_of_patient_id : "";
   const height = req.body.height ? req.body.height : "";
   const weight = req.body.weight ? req.body.weight : "";
   const bmi = req.body.bmi ? req.body.bmi.trim() : "";
-  const refered_by_id = req.body.refered_by_id? req.body.refered_by_id: "";
-  const branch_id = req.body.branch_id ? req.body.branch_id : "";
+  const refered_by_id = req.body.refered_by_id ? req.body.refered_by_id : "";
   const employee_id = req.body.employee_id ? req.body.employee_id : "";
-  const untitled_id  = req.companyData.untitled_id ;
+  const untitled_id = req.companyData.untitled_id;
 
   if (!patient_name) {
     return error422("Patient Name is required.", res);
@@ -323,46 +322,43 @@ const updatePatientRegistration = async (req, res) => {
     return error422("BMI is required.", res);
   } else if (!refered_by_id) {
     return error422("Refered By ID is required.", res);
-  } else if (!branch_id) {
-    return error422("Branch ID is required.", res);
   } else if (!untitled_id) {
     return error422("Untitled ID is required.", res);
   } else if (!mrno) {
     return error422("Mrno is required.", res);
   }
-    //Check if untitled exists
-    const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-    const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
-    if (untitledExistResult[0].length == 0) {
-      return error422("USER Not Found.", res);
-    }
-    const customer_id = untitledExistResult[0][0].customer_id;
-    if (!customer_id) {
-      return error422("Customer ID is required.", res);
-    }
-   // Check if patient_registration exists
-   const patientregistrationQuery = "SELECT * FROM patient_registration WHERE mrno  = ? AND customer_id = ?";
-   const patientregistrationResult = await pool.query(patientregistrationQuery, [mrno, customer_id]);
-   if (patientregistrationResult[0].length == 0) {
-     return error422("Patient Not Found.", res);
-   }
+  //Check if untitled exists
+  const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  if (untitledExistResult[0].length == 0) {
+    return error422("User Not Found.", res);
+  }
+  const customer_id = untitledExistResult[0][0].customer_id;
+  if (!customer_id) {
+    return error422("Customer ID is required.", res);
+  }
+  // Check if patient_registration exists
+  const patientregistrationQuery = "SELECT * FROM patient_registration WHERE mrno  = ? AND customer_id = ?";
+  const patientregistrationResult = await pool.query(patientregistrationQuery, [mrno, customer_id]);
+  if (patientregistrationResult[0].length == 0) {
+    return error422("Patient Not Found.", res);
+  }
+  // Check if the provided patient_registration exists and is active
+  const existingPatientRegistrationQuery =
+    `SELECT * FROM patient_registration WHERE ((entity_id = ${entity_id} AND mobile_no = ${mobile_no}) AND (customer_id = ${customer_id} AND mobile_no = ${mobile_no})) AND mrno !=${mrno} ;`
+  const existingPatientRegistrationResult = await pool.query(existingPatientRegistrationQuery);
 
+  if (existingPatientRegistrationResult[0].length > 0) {
+    return error422("Mobile No already exists.", res);
+  }
   try {
- 
-
-    // Check if the provided patient_registration exists and is active
-    const existingPatientRegistrationQuery =
-      `SELECT * FROM patient_registration WHERE ((entity_id = ${entity_id} AND mobile_no = ${mobile_no}) AND (branch_id = ${branch_id} AND mobile_no = ${mobile_no})) AND mrno !=${mrno} ;`
-    const existingPatientRegistrationResult = await pool.query(existingPatientRegistrationQuery);
-
-    if (existingPatientRegistrationResult[0].length > 0) {
-      return error422("Mobile No already exists.", res);
-    }
     const nowDate = new Date().toISOString().split("T")[0];
     // Update the patient_registration record with new data
-    const updateQuery = `UPDATE patient_registration SET  entity_id = ?, registration_date = ?, mrno_entity_series = ?, patient_name = ?, gender = ?, age = ?, mobile_no = ?, address = ?, city = ?, state = ?, source_of_patient_id = ?, employee_id = ?, height = ?, weight = ?, bmi = ?, refered_by_id = ?, branch_id = ?, untitled_id = ?, mts = ? WHERE mrno = ?`;
+    const updateQuery = `UPDATE patient_registration SET  
+    entity_id = ?, registration_date = ?, mrno_entity_series = ?, patient_name = ?, gender = ?, age = ?, mobile_no = ?, address = ?, city = ?, state_id = ?, source_of_patient_id = ?, employee_id = ?, height = ?, weight = ?, bmi = ?, refered_by_id = ?, customer_id = ?, untitled_id = ?, mts = ? 
+    WHERE mrno = ?`;
 
-    await pool.query(updateQuery, [entity_id,registration_date,mrno_entity_series,patient_name,gender,age,mobile_no,address,city,state,source_of_patient_id,employee_id,height,weight,bmi,refered_by_id,branch_id,untitled_id,untitled_id,nowDate,mrno]);
+    await pool.query(updateQuery, [entity_id, registration_date, mrno_entity_series, patient_name, gender, age, mobile_no, address, city, state_id, source_of_patient_id, employee_id, height, weight, bmi, refered_by_id, customer_id, untitled_id, nowDate, mrno]);
 
     return res.status(200).json({
       status: 200,
@@ -443,7 +439,7 @@ const getPatientVisitLists = async (req, res) => {
 
   const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
   const untitledResult = await pool.query(checkUntitledQuery);
-  const customer_id =  untitledResult[0][0].customer_id;
+  const customer_id = untitledResult[0][0].customer_id;
 
   try {
     let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name FROM patient_visit_list p 
@@ -510,12 +506,12 @@ const getPatientVisitLists = async (req, res) => {
 };
 
 //patient revisit 
-const patientRevisit = async (req, res) =>{
+const patientRevisit = async (req, res) => {
   const mrno = parseInt(req.params.id);
-  const untitled_id =req.companyData.untitled_id;
+  const untitled_id = req.companyData.untitled_id;
 
   const visit_type = req.body.visit_type;
-  if (!visit_type || visit_type !='RE-VISIT') {
+  if (!visit_type || visit_type != 'RE-VISIT') {
     return error422("Patient Visit Type is required.", res);
   }
   const nowDate = new Date().toISOString().split("T")[0];
@@ -532,11 +528,11 @@ const patientRevisit = async (req, res) =>{
     const insertPatientVisitListValues = [mrno, 'RE-VISIT', nowDate];
     const PatientVisitListResult = await pool.query(insertPatientVisitListQuery, insertPatientVisitListValues);
     return res.status(200).json({
-      status:200,
-      message:"Patient Re-Visit Successfully."
+      status: 200,
+      message: "Patient Re-Visit Successfully."
     })
   } catch (error) {
-    return error422(error,res);
+    return error422(error, res);
   }
 }
 module.exports = {
