@@ -100,7 +100,7 @@ const customerLogin = async (req, res) => {
 
 
 // create customer...
-const createCustomer = async (req, res) => {
+const  createCustomer = async (req, res) => {
 
   const organization_name = req.body.organization_name ? req.body.organization_name.trim() : "";
   const customer_name = req.body.customer_name ? req.body.customer_name.trim() : "";

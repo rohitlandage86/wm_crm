@@ -37,6 +37,9 @@ const wm_cutomer_typeRoute = require("./src/routes/super_admin/wm_cutomer_type.r
 const wm_modulesRoute = require("./src/routes/super_admin/wm_modules.route");
 const super_adminRoute = require("./src/routes/super_admin/super_admin.route");
 
+//doctor 
+const consultationRoute = require("./src/routes/doctor/consultation.route")
+
 app.use(bodyParser.json());
 app.use((req,res,next)=>{
     res.setHeader("Access-Control-Allow-Origin","*");
@@ -79,6 +82,7 @@ app.use('/api/wm_customer_header',wm_customer_headerRoute);
 app.use('/api/wm_cutomer_type',wm_cutomer_typeRoute);
 app.use('/api/wm_modules',wm_modulesRoute);
 app.use('/api/super_admin',super_adminRoute);
+app.use('/api/consultation',consultationRoute);
 
 
 

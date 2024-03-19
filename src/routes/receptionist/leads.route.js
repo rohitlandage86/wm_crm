@@ -6,7 +6,8 @@ const checkAuth = require("../../middleware/check.auth");
 router.post('/',checkAuth,leadheaderController.addleads);
 router.get('/',checkAuth,leadheaderController.getLeadHeaders);
 router.get('/wma/',checkAuth,leadheaderController.getLeadHeaderWma);
-router.get('/lead-follow-up',checkAuth,leadheaderController.getFollowUpLeadsList)
+router.put('/lead-follow-up/:id',checkAuth,leadheaderController.updateFollowUpLead);
+router.get('/lead-follow-up',checkAuth,leadheaderController.getFollowUpLeadsList);
 // router.get('/lf/',checkAuth,leadheaderController.get LeadFooters);
 router.get('/:id',checkAuth,leadheaderController.getLeadsHeaderById);
 router.put('/:id',checkAuth,leadheaderController.updateLeads);

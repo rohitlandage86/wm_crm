@@ -210,7 +210,7 @@ const getPatientRegistrations = async (req, res) => {
         per_page: perPage,
         total: total,
         current_page: page,
-        last_page: Math.ceil(total / perPage),
+        last_page: Math.ceil(total / perPage)
       };
     }
 
