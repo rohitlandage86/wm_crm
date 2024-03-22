@@ -7,6 +7,8 @@ router.post('/',checkAuth,patientregistrationController.addPatientRegistration);
 router.get('/',checkAuth,patientregistrationController.getPatientRegistrations);
 router.get('/wma/',checkAuth,patientregistrationController.getPatientRegistrationWma);
 router.get('/patient-visit-list/',checkAuth,patientregistrationController.getPatientVisitLists);
+router.get('/patient-visit-checked-list/',checkAuth,patientregistrationController.getPatientVisitCheckedLists);
+router.get('/generate-mrno-entity-series/:id',checkAuth,patientregistrationController.generateMrnoEntitySeries);
 router.get('/:id',checkAuth,patientregistrationController.getPatientRegistration);
 router.put('/:id',checkAuth,patientregistrationController.updatePatientRegistration);
 router.patch('/:id',checkAuth,patientregistrationController.onStatusChange);

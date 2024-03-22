@@ -229,7 +229,7 @@ const onStatusChange = async (req, res) => {
 };
 //get treatment active...
 const getTreatmentWma = async (req, res) => {
-    const untitled_id = req.companyData.untitled ;
+    const untitled_id = req.companyData.untitled_id ;
 
     const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
     const untitledResult = await pool.query(checkUntitledQuery);

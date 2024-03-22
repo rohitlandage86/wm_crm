@@ -124,12 +124,47 @@ const getReceptionistDashboardCount = async (req, res) => {
     if (employeeDetails.customer_id == 0) {
         return error422("Customer Not Found.", res);
     }
+
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    const dateRangeQuery = `
+        WITH RECURSIVE date_range AS (
+            SELECT ? AS date_value
+            UNION ALL
+            SELECT DATE_ADD(date_value, INTERVAL 1 DAY)
+            FROM date_range
+            WHERE date_value < ?
+        )
+        SELECT date_range.date_value AS registrationDate
+        FROM date_range
+    `;
+
+    const dateRangeResult = await pool.query(dateRangeQuery, [firstDayOfMonth, lastDayOfMonth]);
+    const dateRange = dateRangeResult.map(row => row.registrationDate);
+
+    const registrationCountQuery = `
+        SELECT DATE(registration_date) AS registrationDate, COUNT(*) AS registrationCount
+        FROM patient_registration
+        WHERE registration_date >= ? AND registration_date <= ?
+        GROUP BY DATE(registration_date)
+    `;
+
+    const registrationCountResult = await pool.query(registrationCountQuery, [firstDayOfMonth, lastDayOfMonth]);
+    const registrationCountMap = {};
+    registrationCountResult.forEach(row => {
+        registrationCountMap[row.registrationDate] = row.registrationCount;
+    });
+
+
     try {
         let today_total_patient_count = 0;
         let is_checked_count = 0;
         let is_not_checked_count = 0;
         let first_visit_count = 0;
         let re_visit_count = 0;
+
         //today total patient count...
         let todayTotalPatientCountQuery = `SELECT COUNT(*) AS total FROM patient_visit_list p 
         LEFT JOIN patient_registration pr 
@@ -139,7 +174,7 @@ const getReceptionistDashboardCount = async (req, res) => {
         WHERE p.visit_date = '${visit_date}'  AND pr.customer_id = ${employeeDetails.customer_id}`;
         const todayTotalPatientCountResult = await pool.query(todayTotalPatientCountQuery);
         today_total_patient_count = parseInt(todayTotalPatientCountResult[0][0].total);
-       
+
         //today is checked total patient count...
         let ischeckedCountQuery = `SELECT COUNT(*) AS total FROM patient_visit_list p 
         LEFT JOIN patient_registration pr 
@@ -170,33 +205,106 @@ const getReceptionistDashboardCount = async (req, res) => {
         const firstVisitTotalCountResult = await pool.query(firstVisitCountQuery);
         first_visit_count = parseInt(firstVisitTotalCountResult[0][0].total);
 
-         //today re visit total patient count...
-         let reVisitCountQuery = `SELECT COUNT(*) AS total FROM patient_visit_list p 
+        //today re visit total patient count...
+        let reVisitCountQuery = `SELECT COUNT(*) AS total FROM patient_visit_list p 
          LEFT JOIN patient_registration pr 
          ON pr.mrno = p.mrno
          LEFT JOIN entity e
          ON e.entity_id = pr.entity_id
          WHERE p.visit_date = '${visit_date}' AND p.visit_type = 'RE_VISIT' AND pr.customer_id = ${employeeDetails.customer_id}`;
-         const reVisitTotalCountResult = await pool.query(reVisitCountQuery);
-         re_visit_count = parseInt(reVisitTotalCountResult[0][0].total);
+        const reVisitTotalCountResult = await pool.query(reVisitCountQuery);
+        re_visit_count = parseInt(reVisitTotalCountResult[0][0].total);
+
+
+        let monthly_datewise_patient_registration = [];
+        // //monthly datewise patient registration 
+        // const monthlyDatewisePatientRegistrationQuery = `
+        //        SELECT DATE(registration_date) AS registrationDate, COUNT(*) AS registrationCount
+        //        FROM patient_registration
+        //        WHERE MONTH(registration_date) = MONTH(NOW()) AND YEAR(registration_date) = YEAR(NOW()) AND customer_id = ${employeeDetails.customer_id}
+        //        GROUP BY DATE(registration_date)
+        //    `;
+        // const monthlyDatewisePatientRegistrationResult = await pool.query(monthlyDatewisePatientRegistrationQuery);
+        // const monthly_datewise_patient_registration = monthlyDatewisePatientRegistrationResult[0];
+        // Generate a date range for the current month
+        const dateRangeQuery = `
+       WITH RECURSIVE date_range AS (
+           SELECT DATE('2024-03-01') AS date_value
+           UNION ALL
+           SELECT DATE_ADD(date_value, INTERVAL 1 DAY)
+           FROM date_range
+           WHERE date_value < LAST_DAY(NOW())
+       )
+       SELECT date_range.date_value AS registrationDate
+       FROM date_range
+   `;
+
+        const dateRangeResult = await pool.query(dateRangeQuery);
+        const dateRange = dateRangeResult[0].map(row => row.registrationDate.toISOString().split('T')[0]);
+
+        // Map the existing result to an object for easy lookup
+        const existingResultMap = {};
+        monthly_datewise_patient_registration.forEach(row => {
+            existingResultMap[row.registrationDate.toISOString().split('T')[0]] = row.registrationCount;
+        });
+
+        // Build the final result array including zero counts for missing dates
+        const finalResult = dateRange.map(date => ({
+            registrationDate: date,
+            registrationCount: existingResultMap[date] || 0
+        }));
+
 
         const data = {
             status: 200,
             message: " Receptionist dashboard count retrieved successfully",
             today_total_patient_count: today_total_patient_count,
             is_checked_count: is_checked_count,
-            is_not_checked_count:is_not_checked_count,
-            first_visit_count:first_visit_count,
-            re_visit_count:re_visit_count
+            is_not_checked_count: is_not_checked_count,
+            first_visit_count: first_visit_count,
+            re_visit_count: re_visit_count,
+            monthly_datewise_patient_registration: monthly_datewise_patient_registration,
+            finalResult: finalResult
         };
 
         return res.status(200).json(data);
     } catch (error) {
+        console.log('sdfsdfl', error);
         return error500(error, res);
     }
 };
+const dateWisePatientAppointmentList = async (req, res) => {
+    const appointment_date = req.query.appointment_date
+    const untitled_id = req.companyData.untitled_id
+    //check untitled_id already is exists or not
+    const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
+    const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+    const employeeDetails = isExistUntitledIdResult[0][0];
+    if (employeeDetails.customer_id == 0) {
+        return error422("Customer Not Found.", res);
+    }
+    if (!appointment_date) {
+        return error422("Appointment date is required.", res)
+    }
+
+    try {
+        //get patient consultation appointment
+        const patientConsultationAppointmentListQuery = "SELECT a.*, p.* FROM consultation_appointment a LEFT JOIN patient_registration p ON p.mrno = a.mrno LEFT WHERE a.customer_id = ? AND a.appointment_date = ? ";
+        const patientConsultationAppointmentResult = await pool.query(patientConsultationAppointmentListQuery, [employeeDetails.customer_id, appointment_date]);
+        return res.json({
+            status: 200,
+            message: "Patient consultation appointment retrived successfully.",
+            data: patientConsultationAppointmentResult[0]
+        })
+
+    } catch (error) {
+        console.log(error);
+        return error500(error, res);
+    }
+}
 module.exports = {
     addleads,
-    getReceptionistDashboardCount
+    getReceptionistDashboardCount,
+    dateWisePatientAppointmentList
 
 };

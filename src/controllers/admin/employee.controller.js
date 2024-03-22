@@ -32,7 +32,7 @@ const addEmployee = async (req, res) => {
   const name = req.body.name ? req.body.name.trim() : '';
   const email_id = req.body.email_id ? req.body.email_id.trim() : '';
   const designation_id = req.body.designation_id ? req.body.designation_id : '';
-  const charges = req.body.charges ? req.body.charges : 0;
+  let charges = req.body.charges ? req.body.charges : 0;
   const customer_id = req.body.customer_id ? req.body.customer_id : '';
   const password = req.body.password ? req.body.password.trim() : '';
   const untitled_id = req.companyData.untitled_id ? req.companyData.untitled_id : '';
@@ -71,7 +71,9 @@ const addEmployee = async (req, res) => {
    if (!charges) {
     return error422("Charges is required", res);
    }
-  } 
+  } else {
+    charges = 0
+  }
 
   //check employee  already is exists or notemployee
   const isExistEmployeeQuery = `SELECT * FROM employee  WHERE LOWER(TRIM(email_id)) = ? AND untitled_id = ?`;
@@ -217,7 +219,7 @@ const updateEmployee = async (req, res) => {
   const email_id = req.body.email_id ? req.body.email_id : "";
   const customer_id = req.body.customer_id ? req.body.customer_id : "";
   const designation_id = req.body.designation_id ? req.body.designation_id : "";
-  const charges = req.body.charges ? req.body.charges : 0;
+  let charges = req.body.charges ? req.body.charges : 0;
   const untitled_id = req.companyData.untitled_id;
 
   if (!name) {
@@ -257,7 +259,9 @@ const updateEmployee = async (req, res) => {
     if (!charges) {
      return error422("Charges is required", res);
     }
-   } 
+   } else {
+    charges = 0;
+   }
     // Check if the provided employee exists and is active
     const existingEmployeeQuery ="SELECT * FROM employee WHERE  LOWER(TRIM(email_id)) = ? AND (employee_id!=? AND untitled_id = ?)";
     const existingEmployeeResult = await pool.query(existingEmployeeQuery, [email_id.toLowerCase(),employeeId, untitled_id]);

@@ -5,6 +5,7 @@ const checkAuth = require("../../middleware/check.auth");
 
 router.post('/',checkAuth,receptionistDashboardController.addleads);
 router.get('/',checkAuth,receptionistDashboardController.getReceptionistDashboardCount);
+router.get('/patient-consultation-appointment/',checkAuth,receptionistDashboardController.dateWisePatientAppointmentList);
 // router.get('/wma/',checkAuth,leadheaderController.getLeadHeaderWma);
 // router.get('/lead-follow-up',checkAuth,leadheaderController.getFollowUpLeadsList)
 // router.get('/lf/',checkAuth,leadheaderController.get LeadFooters);

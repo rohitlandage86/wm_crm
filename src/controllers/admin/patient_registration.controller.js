@@ -430,7 +430,6 @@ const getPatientRegistrationWma = async (req, res) => {
     return error500(error, res);
   }
 };
-
 // get Patient Visit Lists ...
 const getPatientVisitLists = async (req, res) => {
   const { page, perPage, key } = req.query;
@@ -505,6 +504,80 @@ const getPatientVisitLists = async (req, res) => {
   }
 };
 
+// get Patient Visit checked Lists ...
+const getPatientVisitCheckedLists = async (req, res) => {
+  const { page, perPage, key } = req.query;
+  const untitled_id = req.companyData.untitled_id;
+  const visit_date = new Date().toISOString().split('T')[0];
+
+  const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+  const untitledResult = await pool.query(checkUntitledQuery);
+  const customer_id = untitledResult[0][0].customer_id;
+
+  try {
+    let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name FROM patient_visit_list p 
+    LEFT JOIN patient_registration pr 
+    ON pr.mrno = p.mrno
+    LEFT JOIN entity e
+    ON e.entity_id = pr.entity_id
+    WHERE p.visit_date = '${visit_date}' AND p.is_checked = 1 AND pr.customer_id = ${customer_id}`;
+
+    let countQuery = `SELECT COUNT(*) AS total  FROM patient_visit_list p 
+    LEFT JOIN patient_registration pr 
+    ON pr.mrno = p.mrno
+    LEFT JOIN entity e
+    ON e.entity_id = pr.entity_id
+    WHERE p.visit_date = '${visit_date}' AND p.is_checked = 1 AND pr.customer_id = ${customer_id}`;
+
+    if (key) {
+      const lowercaseKey = key.toLowerCase().trim();
+      if (key === "activated") {
+        getPatientVisitListsQuery += ` AND p.status = 1`;
+        countQuery += ` AND p.status = 1`;
+      } else if (key === "deactivated") {
+        getPatientVisitListsQuery += ` AND p.status = 0`;
+        countQuery += ` AND p.status = 0`;
+      } else {
+        getPatientVisitListsQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
+        countQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
+      }
+    }
+
+    // Apply pagination if both page and perPage are provided
+    let total = 0;
+    if (page && perPage) {
+      const totalResult = await pool.query(countQuery);
+      total = parseInt(totalResult[0][0].total);
+
+      const start = (page - 1) * perPage;
+      getPatientVisitListsQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+    }
+
+    const result = await pool.query(getPatientVisitListsQuery);
+    const patient_visit_list = result[0];
+
+
+    const data = {
+      status: 200,
+      message: "Patient Visit checked List retrieved successfully",
+      data: patient_visit_list,
+    };
+    // Add pagination information if provided
+    if (page && perPage) {
+      data.pagination = {
+        per_page: perPage,
+        total: total,
+        current_page: page,
+        last_page: Math.ceil(total / perPage),
+      };
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return error500(error, res);
+  }
+};
+
 //patient revisit 
 const patientRevisit = async (req, res) => {
   const mrno = parseInt(req.params.id);
@@ -535,6 +608,44 @@ const patientRevisit = async (req, res) => {
     return error422(error, res);
   }
 }
+const generateMrnoEntitySeries = async (req, res)=>{
+  const entityId = parseInt(req.params.id);
+  const untitled_id = req.companyData.untitled_id;
+    //Check if untitled exists
+    const isUntitledExistsQuery = "SELECT u.*, cb.* FROM untitled u LEFT JOIN wm_customer_branch cb ON cb.branch_id = u.branch_id WHERE u.untitled_id = ?";
+    const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+    if (untitledExistResult[0].length == 0) {
+      return error422("USER Not Found.", res);
+    }
+    const customer_id = untitledExistResult[0][0].customer_id;
+    if (!customer_id) {
+      return error422("Customer ID is required.", res);
+    }
+
+    // get customer untitled id for check  entity_id is exist 
+    const isCustomerUntitledQuery = "SELECT * FROM untitled WHERE  customer_id = ? AND category = 2";
+    const customerUntitledResut = await pool.query(isCustomerUntitledQuery,[ customer_id]);
+    const customerUntitledId = customerUntitledResut[0][0].untitled_id;
+
+    //check entity is exsist 
+    const isExistEntityQuery = `SELECT * FROM entity WHERE entity_id = ${entityId} AND untitled_id = ${customerUntitledId}`;
+    const entityResult = await pool.query(isExistEntityQuery);
+    if (entityResult[0].length == 0) {
+      return error422("Entity Not Found.", res);
+    }
+    //get patient total count 
+    const getPatientCountQuery = "SELECT * FROM patient_registration WHERE entity_id = ?";
+    const patientRegistrationCount =await pool.query(getPatientCountQuery, [entityId]);
+
+    let mrnoEntitySeries = entityResult[0][0].abbrivation+'_'+untitledExistResult[0][0].city+'_'+(patientRegistrationCount[0].length + 1);
+
+    let data = {
+      status:200,
+      message:"Generate mrno entity series successfully.",
+      mrnoEntitySeries:mrnoEntitySeries
+    }
+    return res.json(data)
+}
 module.exports = {
   addPatientRegistration,
   getPatientRegistrations,
@@ -543,5 +654,7 @@ module.exports = {
   onStatusChange,
   getPatientRegistrationWma,
   getPatientVisitLists,
-  patientRevisit
+  getPatientVisitCheckedLists,
+  patientRevisit,
+  generateMrnoEntitySeries
 };
