@@ -912,6 +912,69 @@ const deleteConsultationFileUpload = async (req, res) => {
         return error500(error, res);
     }
 };
+// consultations list  by mrno
+const getConsulationsByMrno = async (req, res) => {
+    const { page, perPage, key } = req.query;
+    const mrno = parseInt(req.params.id);
+    const untitled_id = req.companyData.untitled_id;
+    //check if untitled exists 
+    const isUntitledExistQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
+    const untitledResult = await pool.query(isUntitledExistQuery, [untitled_id]);
+    if (untitledResult[0].length == 0) {
+        return error422("User Not Found.", res);
+    }
+    const customer_id = untitledResult[0][0].customer_id;
+    if (!customer_id) {
+        return error422("Customer Id is required.", res);
+    }
+    if (!key) {
+        return error422("Search key is required.", res)
+    }
+    try {
+        let getConsultationQuery = `SELECT c.*, p.* FROM consultation c 
+        LEFT JOIN patient_registration p 
+        ON p.mrno = c.mrno
+        WHERE c.untitled_id = ${untitled_id}`;
+
+        let countQuery = `SELECT COUNT(*) AS total FROM consultation c 
+        LEFT JOIN patient_registration p 
+        ON p.mrno = c.mrno 
+        WHERE c.untitled_id = ${untitled_id}`;
+
+        const lowercaseKey = key.toLowerCase().trim().replace(/'/g, "\\'");;
+        getConsultationQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+        countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+
+        // Apply pagination if both page and perPage are provided
+        let total = 0;
+        if (page && perPage) {
+            const totalResult = await pool.query(countQuery);
+            total = parseInt(totalResult[0][0].total);
+            const start = (page - 1) * perPage;
+            getConsultationQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+        }
+        const result = await pool.query(getConsultationQuery);
+        const consultations = result[0];
+        const data = {
+            status: 200,
+            message: "Search Consultations retrieved successfully",
+            data: consultations
+        }
+        //Add pagination information if provided 
+        if (page && perPage) {
+            data.pagination = {
+                per_page: perPage,
+                total: total,
+                current_page: page,
+                last_page: Math.ceil(total / perPage)
+            };
+        }
+        return res.json(data);
+    } catch (error) {
+        console.log(error);
+        return error500(error, res);
+    }
+}
 module.exports = {
     createConsultation,
     getConsultationById,
@@ -920,6 +983,7 @@ module.exports = {
     deleteConsultationDiagnosis,
     deleteConsultationTreatment,
     deleteConsultationMedicine,
-    deleteConsultationFileUpload
+    deleteConsultationFileUpload,
+    getConsulationsByMrno
 
 }

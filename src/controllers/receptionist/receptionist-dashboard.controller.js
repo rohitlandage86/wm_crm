@@ -216,20 +216,21 @@ const getReceptionistDashboardCount = async (req, res) => {
         re_visit_count = parseInt(reVisitTotalCountResult[0][0].total);
 
 
-        let monthly_datewise_patient_registration = [];
         // //monthly datewise patient registration 
-        // const monthlyDatewisePatientRegistrationQuery = `
-        //        SELECT DATE(registration_date) AS registrationDate, COUNT(*) AS registrationCount
-        //        FROM patient_registration
-        //        WHERE MONTH(registration_date) = MONTH(NOW()) AND YEAR(registration_date) = YEAR(NOW()) AND customer_id = ${employeeDetails.customer_id}
-        //        GROUP BY DATE(registration_date)
-        //    `;
-        // const monthlyDatewisePatientRegistrationResult = await pool.query(monthlyDatewisePatientRegistrationQuery);
-        // const monthly_datewise_patient_registration = monthlyDatewisePatientRegistrationResult[0];
-        // Generate a date range for the current month
+        const monthlyDatewisePatientRegistrationQuery = `
+               SELECT DATE(registration_date) AS registrationDate, COUNT(*) AS registrationCount
+               FROM patient_registration
+               WHERE MONTH(registration_date) = MONTH(NOW()) AND YEAR(registration_date) = YEAR(NOW()) AND customer_id = ${employeeDetails.customer_id}
+               GROUP BY DATE(registration_date)
+           `;
+        const monthlyDatewisePatientRegistrationResult = await pool.query(monthlyDatewisePatientRegistrationQuery);
+        const monthly_datewise_patient_registration = monthlyDatewisePatientRegistrationResult[0];
+        // Generate a date range for the current month 
+        const nowDate = new Date().toISOString().split("T")[0]
+        nowMonth = nowDate.split("-")[0] + '-' + nowDate.split("-")[1];
         const dateRangeQuery = `
        WITH RECURSIVE date_range AS (
-           SELECT DATE('2024-03-01') AS date_value
+           SELECT DATE('${nowMonth + '-' + '01'}') AS date_value
            UNION ALL
            SELECT DATE_ADD(date_value, INTERVAL 1 DAY)
            FROM date_range
@@ -263,8 +264,7 @@ const getReceptionistDashboardCount = async (req, res) => {
             is_not_checked_count: is_not_checked_count,
             first_visit_count: first_visit_count,
             re_visit_count: re_visit_count,
-            monthly_datewise_patient_registration: monthly_datewise_patient_registration,
-            finalResult: finalResult
+            monthly_datewise_patient_registration: finalResult
         };
 
         return res.status(200).json(data);
@@ -289,11 +289,11 @@ const dateWisePatientAppointmentList = async (req, res) => {
 
     try {
         //get patient consultation appointment
-        const patientConsultationAppointmentListQuery = "SELECT a.*, p.* FROM consultation_appointment a LEFT JOIN patient_registration p ON p.mrno = a.mrno LEFT WHERE a.customer_id = ? AND a.appointment_date = ? ";
+        const patientConsultationAppointmentListQuery = "SELECT a.*, p.* FROM consultation_appointment a LEFT JOIN patient_registration p ON p.mrno = a.mrno  WHERE a.customer_id = ? AND a.appointment_date = ? ";
         const patientConsultationAppointmentResult = await pool.query(patientConsultationAppointmentListQuery, [employeeDetails.customer_id, appointment_date]);
         return res.json({
             status: 200,
-            message: "Patient consultation appointment retrived successfully.",
+            message: "Patient consultation appointment retrived.",
             data: patientConsultationAppointmentResult[0]
         })
 
@@ -302,9 +302,59 @@ const dateWisePatientAppointmentList = async (req, res) => {
         return error500(error, res);
     }
 }
+// get category wise lead header count
+const  getCategoryWiseLeadHeaderCount = async (req, res) =>{
+    try {
+        const query = `SELECT c.category_id, c.category_name, COALESCE(lh.lead_count, 0) AS lead_count 
+        FROM category c
+        LEFT JOIN (
+            SELECT category_id, COUNT(lead_hid) AS lead_count
+            FROM 
+                lead_header
+            WHERE 
+                MONTH(lead_date) = MONTH(CURDATE())
+            GROUP BY 
+                category_id)
+        lh ON c.category_id = lh.category_id`;
+        const categoryWiseLeadCount = await pool.query(query);
+        return res.status(200).json({
+            status:200,
+            message:"Category Wise Lead Header count for corrent month",
+            data:categoryWiseLeadCount[0]
+        })
+    } catch (error) {
+        return error500(error, res);
+    }
+}
+//get entity wise patient registration count
+const getEntityWisePatientRegistrationCount = async (req, res)=>{
+    try {
+        const query =  ` SELECT e.entity_id, e.entity_name, COALESCE(p.patient_count, 0) AS patient_count
+            FROM entity e
+            LEFT JOIN  (
+                SELECT entity_id, COUNT(mrno) AS patient_count
+                FROM 
+                    patient_registration
+                WHERE 
+                    MONTH(registration_date) = MONTH(CURDATE())
+                GROUP BY
+                    entity_id)
+            p ON e.entity_id = p.entity_id` ;
+        const entityWisePatientRegistrationCount = await pool.query(query);
+        return res.status(200).json({
+            status:200,
+            message:"Entity wise patient registration count for correct month",
+            data:entityWisePatientRegistrationCount[0]
+        })
+    } catch (error) {
+        return error500(error, res);
+    }
+}
 module.exports = {
     addleads,
     getReceptionistDashboardCount,
-    dateWisePatientAppointmentList
+    dateWisePatientAppointmentList,
+    getCategoryWiseLeadHeaderCount,
+    getEntityWisePatientRegistrationCount
 
 };

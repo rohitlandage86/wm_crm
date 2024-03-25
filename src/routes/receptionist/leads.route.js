@@ -8,6 +8,7 @@ router.get('/',checkAuth,leadheaderController.getLeadHeaders);
 router.get('/wma/',checkAuth,leadheaderController.getLeadHeaderWma);
 router.put('/lead-follow-up/:id',checkAuth,leadheaderController.updateFollowUpLead);
 router.get('/lead-follow-up',checkAuth,leadheaderController.getFollowUpLeadsList);
+router.get('/search-lead-header',checkAuth,leadheaderController.searchLeadHeaders);
 // router.get('/lf/',checkAuth,leadheaderController.get LeadFooters);
 router.get('/:id',checkAuth,leadheaderController.getLeadsHeaderById);
 router.put('/:id',checkAuth,leadheaderController.updateLeads);

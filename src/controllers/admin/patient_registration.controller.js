@@ -133,7 +133,6 @@ const addPatientRegistration = async (req, res) => {
     return error500(error, res);
   }
 };
-
 // get patient_registrations list...
 const getPatientRegistrations = async (req, res) => {
   const { page, perPage, key } = req.query;
@@ -219,7 +218,6 @@ const getPatientRegistrations = async (req, res) => {
     return error500(error, res);
   }
 };
-
 // get patient_registration  by id...
 const getPatientRegistration = async (req, res) => {
   const mrno = parseInt(req.params.id);
@@ -266,7 +264,6 @@ const getPatientRegistration = async (req, res) => {
     return error500(error, res);
   }
 };
-
 //patient_registration update...
 const updatePatientRegistration = async (req, res) => {
   const mrno = parseInt(req.params.id);
@@ -368,7 +365,6 @@ const updatePatientRegistration = async (req, res) => {
     return error500(error, res);
   }
 };
-
 //status change of patient_registration...
 const onStatusChange = async (req, res) => {
   const patientregistrationId = parseInt(req.params.id);
@@ -503,7 +499,6 @@ const getPatientVisitLists = async (req, res) => {
     return error500(error, res);
   }
 };
-
 // get Patient Visit checked Lists ...
 const getPatientVisitCheckedLists = async (req, res) => {
   const { page, perPage, key } = req.query;
@@ -577,7 +572,6 @@ const getPatientVisitCheckedLists = async (req, res) => {
     return error500(error, res);
   }
 };
-
 //patient revisit 
 const patientRevisit = async (req, res) => {
   const mrno = parseInt(req.params.id);
@@ -646,6 +640,85 @@ const generateMrnoEntitySeries = async (req, res)=>{
     }
     return res.json(data)
 }
+//search patient registration by mobile and patient
+const searchPatientRegistration = async (req, res)=>{
+  const { page, perPage, key } = req.query;
+  const untitled_id = req.companyData.untitled_id;
+  //Check if untitled exists
+  const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  if (untitledExistResult[0].length == 0) {
+    return error422("USER Not Found.", res);
+  }
+  const customer_id = untitledExistResult[0][0].customer_id;
+  if (!customer_id) {
+    return error422("Customer ID is required.", res);
+  }
+  if (!key) {
+    return error422("Search Key is required",res);
+  }
+  try {
+    let getPatientRegistrationQuery = `SELECT p.*, e.entity_name, s.source_of_patient_name, em.name, r.refered_by_name   FROM patient_registration p
+          LEFT JOIN entity e
+          ON e.entity_id = p.entity_id
+          LEFT JOIN source_of_patient s
+          ON s.source_of_patient_id = p.source_of_patient_id
+          LEFT JOIN employee em
+          ON em.employee_id = p.employee_id
+          LEFT JOIN refered_by r
+          ON r.refered_by_id = p.refered_by_id
+          WHERE p.customer_id = ${customer_id}`;
+
+    let countQuery = `SELECT COUNT(*) AS total FROM patient_registration p
+      LEFT JOIN entity e
+      ON e.entity_id = p.entity_id
+      LEFT JOIN source_of_patient s
+      ON s.source_of_patient_id = p.source_of_patient_id
+      LEFT JOIN employee em
+      ON em.employee_id = p.employee_id
+      LEFT JOIN refered_by r
+      ON r.refered_by_id = p.refered_by_id
+      WHERE p.customer_id = ${customer_id}`;
+
+      const lowercaseKey = key.toLowerCase().trim();
+      
+        getPatientRegistrationQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
+        countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
+    getPatientRegistrationQuery += " ORDER BY p.cts DESC";
+
+    // Apply pagination if both page and perPage are provided
+    let total = 0;
+    if (page && perPage) {
+      const totalResult = await pool.query(countQuery);
+      total = parseInt(totalResult[0][0].total);
+
+      const start = (page - 1) * perPage;
+      getPatientRegistrationQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+    }
+
+    const result = await pool.query(getPatientRegistrationQuery);
+    const patient_registration = result[0];
+
+    const data = {
+      status: 200,
+      message: "Search Patient Registration retrieved successfully",
+      data: patient_registration,
+    };
+    // Add pagination information if provided
+    if (page && perPage) {
+      data.pagination = {
+        per_page: perPage,
+        total: total,
+        current_page: page,
+        last_page: Math.ceil(total / perPage)
+      };
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return error500(error, res);
+  }
+}
 module.exports = {
   addPatientRegistration,
   getPatientRegistrations,
@@ -656,5 +729,6 @@ module.exports = {
   getPatientVisitLists,
   getPatientVisitCheckedLists,
   patientRevisit,
-  generateMrnoEntitySeries
+  generateMrnoEntitySeries,
+  searchPatientRegistration
 };
