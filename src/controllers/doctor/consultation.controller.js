@@ -975,6 +975,85 @@ const getConsulationsByMrno = async (req, res) => {
         return error500(error, res);
     }
 }
+//Appointment list 
+const getAppointmentList = async (req, res) => {
+    const { page, perPage, key, fromDate, toDate } = req.query;
+
+    const untitled_id = req.companyData.untitled_id;
+
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id = untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId = customerResult[0][0].untitled_id;
+    let appointmentQuery = `SELECT a.*, p.*, p.registration_date, p.mrno_entity_series, p.patient_name,p.gender,p.age, p.mobile_no, p.city, e.entity_name, e.abbrivation, s.source_of_patient_name, em.name AS employee_name , r.refered_by_name
+    FROM consultation_appointment a 
+    LEFT JOIN patient_registration p 
+    ON p.mrno = a.mrno 
+    LEFT JOIN entity e
+    ON e.entity_id = p.entity_id
+    LEFT JOIN source_of_patient s
+    ON s.source_of_patient_id = p.source_of_patient_id
+    LEFT JOIN employee em
+    ON em.employee_id = p.employee_id
+    LEFT JOIN refered_by r
+    ON r.refered_by_id = p.refered_by_id
+    WHERE  a.customer_id = ${customer_id} `;
+    let countQuery = `SELECT COUNT(*) AS total FROM consultation_appointment a 
+    LEFT JOIN patient_registration p 
+    ON p.mrno = a.mrno 
+    LEFT JOIN entity e
+    ON e.entity_id = p.entity_id
+    LEFT JOIN source_of_patient s
+    ON s.source_of_patient_id = p.source_of_patient_id
+    LEFT JOIN employee em
+    ON em.employee_id = p.employee_id
+    LEFT JOIN refered_by r
+    ON r.refered_by_id = p.refered_by_id
+    WHERE  a.customer_id = ${customer_id} `;
+
+    // filter from date and to date
+    if (fromDate && toDate) {
+        appointmentQuery += ` AND a.appointment_date >= '${fromDate}' AND a.appointment_date <= '${toDate}'`;
+        countQuery += ` AND a.appointment_date >= '${fromDate}' AND a.appointment_date <= '${toDate}'`;
+    }
+    appointmentQuery += ` ORDER BY a.cts DESC`;
+    try {
+        // Apply pagination if both page and perPage are provided
+        let total = 0;
+        if (page && perPage) {
+            const totalResult = await pool.query(countQuery);
+            total = parseInt(totalResult[0][0].total);
+
+            const start = (page - 1) * perPage;
+            appointmentQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+        }
+        const appointmentResult = await pool.query(appointmentQuery);
+        const appointment = appointmentResult[0];
+
+        const data = {
+            status: 200,
+            message: "Consultation Appointment retrieved successfully.",
+            data: appointment,
+        };
+        // Add pagination information if provided
+        if (page && perPage) {
+            data.pagination = {
+                per_page: perPage,
+                total: total,
+                current_page: page,
+                last_page: Math.ceil(total / perPage)
+            };
+        }
+
+        return res.status(200).json(data);
+    } catch (error) {
+        console.log(error);
+        return error500(error, res);
+    }
+
+}
 module.exports = {
     createConsultation,
     getConsultationById,
@@ -984,6 +1063,7 @@ module.exports = {
     deleteConsultationTreatment,
     deleteConsultationMedicine,
     deleteConsultationFileUpload,
-    getConsulationsByMrno
+    getConsulationsByMrno,
+    getAppointmentList
 
 }

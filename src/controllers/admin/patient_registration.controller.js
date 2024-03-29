@@ -103,6 +103,7 @@ const addPatientRegistration = async (req, res) => {
   if (isExistPatientRegistrationResult[0].length > 0) {
     return error422(" Patient is already exists.", res);
   }
+
   // Attempt to obtain a database connection
   let connection = await getConnection();
   try {
@@ -124,10 +125,19 @@ const addPatientRegistration = async (req, res) => {
     const insertPaymentHistoryValues = [payment_type, mrno, amount, untitled_id];
     const paymentHistoryResult = await connection.query(insertPaymentHistoryQuery, insertPaymentHistoryValues);
 
+    //check lead_header  is exists or not
+    const isExistLeadHeaderQuery = `SELECT * FROM lead_header WHERE mobile_number = ? AND customer_id = ?`;
+    const isExistLeadHeaderResult = await connection.query(isExistLeadHeaderQuery, [mobile_no, customer_id]);
+    if (isExistLeadHeaderResult[0].length > 0) {
+      //insert  into lead footer  table...
+      const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls,lead_status_id) VALUES (?, ?, ?, ?, ?, ?)";
+      const insertLeadFooterValues = [isExistLeadHeaderResult[0][0].lead_hid, "PATIENT REGISTRATION", registration_date, '', '', 2];
+      const insertLeadFooterResult = await connection.query(insertLeadFooterQuery, insertLeadFooterValues);
+    }
     await connection.commit();
     res.status(200).json({
       status: 200,
-      message: "Patient Registration  successfully",
+      message: "Patient Registration successfully",
     });
   } catch (error) {
     return error500(error, res);
@@ -135,7 +145,7 @@ const addPatientRegistration = async (req, res) => {
 };
 // get patient_registrations list...
 const getPatientRegistrations = async (req, res) => {
-  const { page, perPage, key } = req.query;
+  const { page, perPage, key, fromDate, toDate, entity_id, gender, source_of_patient_id, employee_id, refered_by_id } = req.query;
   const untitled_id = req.companyData.untitled_id;
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
@@ -148,7 +158,7 @@ const getPatientRegistrations = async (req, res) => {
     return error422("Customer ID is required.", res);
   }
   try {
-    let getPatientRegistrationQuery = `SELECT p.*, e.entity_name, s.source_of_patient_name, em.name, r.refered_by_name   FROM patient_registration p
+    let getPatientRegistrationQuery = `SELECT p.*, e.entity_name, e.abbrivation, s.source_of_patient_name, em.name AS employee_name , r.refered_by_name   FROM patient_registration p
           LEFT JOIN entity e
           ON e.entity_id = p.entity_id
           LEFT JOIN source_of_patient s
@@ -179,9 +189,39 @@ const getPatientRegistrations = async (req, res) => {
         getPatientRegistrationQuery += ` AND p.status = 0`;
         countQuery += ` AND p.status = 0`;
       } else {
-        getPatientRegistrationQuery += ` AND (LOWER(p.mrno ) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
-        countQuery += ` AND (LOWER(p.mrno ) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
+        // getPatientRegistrationQuery += ` AND (LOWER(p.mrno ) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
+        // countQuery += ` AND (LOWER(p.mrno ) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
       }
+    }
+    // filter from date and to date
+    if (fromDate && toDate) {
+      getPatientRegistrationQuery += ` AND p.registration_date >= '${fromDate}' AND p.registration_date <= '${toDate}'`;
+      countQuery += ` AND p.registration_date >= '${fromDate}' AND p.registration_date <= '${toDate}'`;
+    }
+    //fitler entity id
+    if (entity_id) {
+      getPatientRegistrationQuery += ` AND p.entity_id = '${entity_id}'`;
+      countQuery += ` AND p.entity_id = '${entity_id}'`;
+    }
+    //fitler gender
+    if (gender) {
+      getPatientRegistrationQuery += ` AND p.gender = '${gender}'`;
+      countQuery += ` AND p.gender = '${gender}'`;
+    }
+    // filter  source of patient id
+    if (source_of_patient_id) {
+      getPatientRegistrationQuery += ` AND p.source_of_patient_id = '${source_of_patient_id}'`;
+      countQuery += ` AND p.source_of_patient_id = '${source_of_patient_id}'`;
+    }
+    //filter employee id
+    if (employee_id) {
+      getPatientRegistrationQuery += ` AND p.employee_id = '${employee_id}'`;
+      countQuery += ` AND p.employee_id = '${employee_id}'`;
+    }
+    //filter refered by id
+    if (refered_by_id) {
+      getPatientRegistrationQuery += ` AND p.refered_by_id = '${refered_by_id}'`;
+      countQuery += ` AND p.refered_by_id = '${refered_by_id}'`
     }
     getPatientRegistrationQuery += " ORDER BY p.cts DESC";
 
@@ -602,46 +642,46 @@ const patientRevisit = async (req, res) => {
     return error422(error, res);
   }
 }
-const generateMrnoEntitySeries = async (req, res)=>{
+const generateMrnoEntitySeries = async (req, res) => {
   const entityId = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
-    //Check if untitled exists
-    const isUntitledExistsQuery = "SELECT u.*, cb.* FROM untitled u LEFT JOIN wm_customer_branch cb ON cb.branch_id = u.branch_id WHERE u.untitled_id = ?";
-    const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
-    if (untitledExistResult[0].length == 0) {
-      return error422("USER Not Found.", res);
-    }
-    const customer_id = untitledExistResult[0][0].customer_id;
-    if (!customer_id) {
-      return error422("Customer ID is required.", res);
-    }
+  //Check if untitled exists
+  const isUntitledExistsQuery = "SELECT u.*, cb.* FROM untitled u LEFT JOIN wm_customer_branch cb ON cb.branch_id = u.branch_id WHERE u.untitled_id = ?";
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  if (untitledExistResult[0].length == 0) {
+    return error422("USER Not Found.", res);
+  }
+  const customer_id = untitledExistResult[0][0].customer_id;
+  if (!customer_id) {
+    return error422("Customer ID is required.", res);
+  }
 
-    // get customer untitled id for check  entity_id is exist 
-    const isCustomerUntitledQuery = "SELECT * FROM untitled WHERE  customer_id = ? AND category = 2";
-    const customerUntitledResut = await pool.query(isCustomerUntitledQuery,[ customer_id]);
-    const customerUntitledId = customerUntitledResut[0][0].untitled_id;
+  // get customer untitled id for check  entity_id is exist 
+  const isCustomerUntitledQuery = "SELECT * FROM untitled WHERE  customer_id = ? AND category = 2";
+  const customerUntitledResut = await pool.query(isCustomerUntitledQuery, [customer_id]);
+  const customerUntitledId = customerUntitledResut[0][0].untitled_id;
 
-    //check entity is exsist 
-    const isExistEntityQuery = `SELECT * FROM entity WHERE entity_id = ${entityId} AND untitled_id = ${customerUntitledId}`;
-    const entityResult = await pool.query(isExistEntityQuery);
-    if (entityResult[0].length == 0) {
-      return error422("Entity Not Found.", res);
-    }
-    //get patient total count 
-    const getPatientCountQuery = "SELECT * FROM patient_registration WHERE entity_id = ?";
-    const patientRegistrationCount =await pool.query(getPatientCountQuery, [entityId]);
+  //check entity is exsist 
+  const isExistEntityQuery = `SELECT * FROM entity WHERE entity_id = ${entityId} AND untitled_id = ${customerUntitledId}`;
+  const entityResult = await pool.query(isExistEntityQuery);
+  if (entityResult[0].length == 0) {
+    return error422("Entity Not Found.", res);
+  }
+  //get patient total count 
+  const getPatientCountQuery = "SELECT * FROM patient_registration WHERE entity_id = ?";
+  const patientRegistrationCount = await pool.query(getPatientCountQuery, [entityId]);
 
-    let mrnoEntitySeries = entityResult[0][0].abbrivation+'_'+untitledExistResult[0][0].city+'_'+(patientRegistrationCount[0].length + 1);
+  let mrnoEntitySeries = entityResult[0][0].abbrivation + '_' + untitledExistResult[0][0].city + '_' + (patientRegistrationCount[0].length + 1);
 
-    let data = {
-      status:200,
-      message:"Generate mrno entity series successfully.",
-      mrnoEntitySeries:mrnoEntitySeries
-    }
-    return res.json(data)
+  let data = {
+    status: 200,
+    message: "Generate mrno entity series successfully.",
+    mrnoEntitySeries: mrnoEntitySeries
+  }
+  return res.json(data)
 }
 //search patient registration by mobile and patient
-const searchPatientRegistration = async (req, res)=>{
+const searchPatientRegistration = async (req, res) => {
   const { page, perPage, key } = req.query;
   const untitled_id = req.companyData.untitled_id;
   //Check if untitled exists
@@ -655,7 +695,7 @@ const searchPatientRegistration = async (req, res)=>{
     return error422("Customer ID is required.", res);
   }
   if (!key) {
-    return error422("Search Key is required",res);
+    return error422("Search Key is required", res);
   }
   try {
     let getPatientRegistrationQuery = `SELECT p.*, e.entity_name, s.source_of_patient_name, em.name, r.refered_by_name   FROM patient_registration p
@@ -680,10 +720,10 @@ const searchPatientRegistration = async (req, res)=>{
       ON r.refered_by_id = p.refered_by_id
       WHERE p.customer_id = ${customer_id}`;
 
-      const lowercaseKey = key.toLowerCase().trim();
-      
-        getPatientRegistrationQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
-        countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
+    const lowercaseKey = key.toLowerCase().trim();
+
+    getPatientRegistrationQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
+    countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
     getPatientRegistrationQuery += " ORDER BY p.cts DESC";
 
     // Apply pagination if both page and perPage are provided
@@ -719,6 +759,88 @@ const searchPatientRegistration = async (req, res)=>{
     return error500(error, res);
   }
 }
+//get all patient visit lists...
+const getAllPatientVisitList = async (req, res) => {
+  const { page, perPage, key, fromDate, toDate, visit_type } = req.query;
+  const untitled_id = req.companyData.untitled_id;
+
+  const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+  const untitledResult = await pool.query(checkUntitledQuery);
+  const customer_id = untitledResult[0][0].customer_id;
+
+  try {
+    let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name, pr.customer_id FROM patient_visit_list p 
+    LEFT JOIN patient_registration pr 
+    ON pr.mrno = p.mrno
+    LEFT JOIN entity e
+    ON e.entity_id = pr.entity_id
+    WHERE pr.customer_id = ${customer_id}`;
+    // p.visit_date = '${visit_date}'  
+
+    let countQuery = `SELECT COUNT(*) AS total  FROM patient_visit_list p 
+    LEFT JOIN patient_registration pr 
+    ON pr.mrno = p.mrno
+    LEFT JOIN entity e
+    ON e.entity_id = pr.entity_id
+    WHERE  pr.customer_id = ${customer_id}`;
+
+    if (key) {
+      const lowercaseKey = key.toLowerCase().trim();
+      if (key === "activated") {
+        getPatientVisitListsQuery += ` AND p.status = 1`;
+        countQuery += ` AND p.status = 1`;
+      } else if (key === "deactivated") {
+        getPatientVisitListsQuery += ` AND p.status = 0`;
+        countQuery += ` AND p.status = 0`;
+      } else {
+        // getPatientVisitListsQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
+        // countQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
+      }
+    }
+    if (fromDate && toDate) {
+      getPatientVisitListsQuery += ` AND p.visit_date >= '${fromDate}' AND p.visit_date <= '${toDate}'`;
+      countQuery += ` AND p.visit_date >= '${fromDate}' AND p.visit_date <= '${toDate}'`;
+    }
+    if (visit_type) {
+      getPatientVisitListsQuery += ` AND p.visit_type = '${visit_type}'`;
+      countQuery += ` AND p.visit_type = '${visit_type}'`;
+    }
+
+    // Apply pagination if both page and perPage are provided
+    let total = 0;
+    if (page && perPage) {
+      const totalResult = await pool.query(countQuery);
+      total = parseInt(totalResult[0][0].total);
+
+      const start = (page - 1) * perPage;
+      getPatientVisitListsQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+    }
+
+    const result = await pool.query(getPatientVisitListsQuery);
+    const patient_visit_list = result[0];
+
+
+    const data = {
+      status: 200,
+      message: "Patient Visit Listretrieved successfully",
+      data: patient_visit_list,
+    };
+    // Add pagination information if provided
+    if (page && perPage) {
+      data.pagination = {
+        per_page: perPage,
+        total: total,
+        current_page: page,
+        last_page: Math.ceil(total / perPage),
+      };
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return error500(error, res);
+  }
+}
+
 module.exports = {
   addPatientRegistration,
   getPatientRegistrations,
@@ -730,5 +852,6 @@ module.exports = {
   getPatientVisitCheckedLists,
   patientRevisit,
   generateMrnoEntitySeries,
-  searchPatientRegistration
+  searchPatientRegistration,
+  getAllPatientVisitList
 };

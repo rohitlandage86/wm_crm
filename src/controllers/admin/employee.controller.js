@@ -350,6 +350,14 @@ const onStatusChange = async (req, res) => {
 //get employee active...
 const getEmployeeWma = async (req, res) => {
   const untitled_id = req.companyData.untitled_id;
+
+  const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+  const untitledResult = await pool.query(checkUntitledQuery);
+  const customer_id =  untitledResult[0][0].customer_id;
+  const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+  const customerResult = await pool.query(isCustomerQuery);
+  const untitledId =  customerResult[0][0].untitled_id;
+
   let employeeQuery = `SELECT e.*, d.designation_name, cb.branch   FROM employee e
   LEFT JOIN wm_customer_branch cb
   ON cb.customer_id = e.customer_id
@@ -357,7 +365,7 @@ const getEmployeeWma = async (req, res) => {
   ON d.designation_id = e.designation_id
   LEFT JOIN untitled u
   ON u.employee_id = e.employee_id
-    WHERE e.status = 1 AND u.category=3 ORDER BY e.cts DESC`;
+    WHERE e.status = 1 AND u.category=3 AND e.untitled_id = ${untitledId} ORDER BY e.cts DESC`;
   try {
     const employeeResult = await pool.query(employeeQuery);
     const employee = employeeResult[0];
