@@ -18,27 +18,35 @@ error500 = (error, res) => {
 
 // add diagnosis...
 const addDiagnosis = async (req, res) => {
-    const   diagnosis_name   = req.body. diagnosis_name   ? req.body. diagnosis_name .trim()  : '';
+    const diagnosis_name = req.body.diagnosis_name ? req.body.diagnosis_name.trim() : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    const untitled_id =req.companyData.untitled_id ;
- 
-    if (! diagnosis_name ) {
+    const untitled_id = req.companyData.untitled_id;
+
+    //  add a chief complaint for insert admin untitled id
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id = untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId = customerResult[0][0].untitled_id;
+
+    if (!diagnosis_name) {
         return error422(" Diagnosis Name is required.", res);
-    }  else if (!untitled_id) {
+    } else if (!untitledId) {
         return error422("Untitled ID is required.", res);
     }
 
     //check  Diagnosis already is exists or not
     const isExistDiagnosisQuery = `SELECT * FROM  diagnosis  WHERE LOWER(TRIM(diagnosis_name))= ? AND untitled_id = ?`;
-    const isExistDiagnosisResult = await pool.query(isExistDiagnosisQuery, [ diagnosis_name.toLowerCase(), untitled_id]);
+    const isExistDiagnosisResult = await pool.query(isExistDiagnosisQuery, [diagnosis_name.toLowerCase(), untitledId]);
     if (isExistDiagnosisResult[0].length > 0) {
         return error422(" Diagnosis Name is already exists.", res);
-    } 
+    }
 
     try {
         //insert into Diagnosis
         const insertDiagnosisQuery = `INSERT INTO diagnosis (diagnosis_name, description, untitled_id ) VALUES (?, ?, ? )`;
-        const insertDiagnosisValues = [ diagnosis_name, description, untitled_id ];
+        const insertDiagnosisValues = [diagnosis_name, description, untitledId];
         const diagnosisResult = await pool.query(insertDiagnosisQuery, insertDiagnosisValues);
 
         res.status(200).json({
@@ -53,7 +61,7 @@ const addDiagnosis = async (req, res) => {
 // get diagnosis list...
 const getDiagnosiss = async (req, res) => {
     const { page, perPage, key } = req.query;
-    const untitled_id = req.companyData.untitled_id ;
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         let getDiagnosisQuery = `SELECT d.*, u.untitled_id  FROM diagnosis d
@@ -65,7 +73,7 @@ const getDiagnosiss = async (req, res) => {
         LEFT JOIN untitled u
         ON d.untitled_id = u.untitled_id
         WHERE d.untitled_id = ${untitled_id}`;
-        
+
         if (key) {
             const lowercaseKey = key.toLowerCase().trim();
             if (key === "activated") {
@@ -108,7 +116,7 @@ const getDiagnosiss = async (req, res) => {
                 last_page: Math.ceil(total / perPage),
             };
         }
-     
+
 
         return res.status(200).json(data);
     } catch (error) {
@@ -129,12 +137,12 @@ const getDiagnosis = async (req, res) => {
         WHERE d.diagnosis_id  = ? AND d.untitled_id = ?`;
         const diagnosisResult = await pool.query(diagnosisQuery, [diagnosisId, untitled_id
         ]);
-        
+
         if (diagnosisResult[0].length == 0) {
             return error422("Diagnosis Not Found.", res);
         }
         const diagnosis = diagnosisResult[0][0];
-        
+
         return res.status(200).json({
             status: 200,
             message: "Diagnosis Retrived Successfully",
@@ -151,7 +159,7 @@ const updateDiagnosis = async (req, res) => {
     const diagnosis_name = req.body.diagnosis_name ? req.body.diagnosis_name.trim() : '';
     const description = req.body.description ? req.body.description.trim() : '';
     const untitled_id = req.companyData.untitled_id;
- 
+
     if (!diagnosis_name) {
         return error422("Diagnosis name is required.", res);
     } else if (!untitled_id) {
@@ -188,7 +196,7 @@ const updateDiagnosis = async (req, res) => {
             message: "Diagnosis updated successfully.",
         });
     } catch (error) {
-        return error500(error,res);
+        return error500(error, res);
     }
 }
 
@@ -233,7 +241,7 @@ const onStatusChange = async (req, res) => {
             message: `Diagnosis ${statusMessage} successfully.`,
         });
     } catch (error) {
-        return error500(error,res);
+        return error500(error, res);
     }
 };
 //get diagnosis active...
@@ -242,10 +250,10 @@ const getDiagnosisWma = async (req, res) => {
 
     const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
     const untitledResult = await pool.query(checkUntitledQuery);
-    const customer_id =  untitledResult[0][0].customer_id;
+    const customer_id = untitledResult[0][0].customer_id;
     const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
     const customerResult = await pool.query(isCustomerQuery);
-    const untitledId =  customerResult[0][0].untitled_id;
+    const untitledId = customerResult[0][0].untitled_id;
 
     let diagnosisQuery = `SELECT d.*  FROM diagnosis d LEFT JOIN untitled u ON u.untitled_id = d.untitled_id WHERE d.status = 1 AND u.category=2 AND d.untitled_id = ${untitledId} ORDER BY d.cts DESC`;
     try {
@@ -258,9 +266,9 @@ const getDiagnosisWma = async (req, res) => {
             data: diagnosis,
         });
     } catch (error) {
-        return error500(error,res);
+        return error500(error, res);
     }
-    
+
 }
 
 module.exports = {

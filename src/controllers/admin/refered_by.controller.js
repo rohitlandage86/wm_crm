@@ -21,16 +21,23 @@ error500 = (error, res) => {
 const addReferedBy = async (req, res) => {
     const  refered_by_name  = req.body.refered_by_name  ? req.body.refered_by_name.trim()  : '';
     const untitled_id  = req.companyData.untitled_id ;
- 
+    //  add a chief complaint for insert admin untitled id
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id =  untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId =  customerResult[0][0].untitled_id;
+
     if (!refered_by_name) {
         return error422("Refered By Name is required.", res);
-    }  else if (!untitled_id) {
+    }  else if (!untitledId) {
         return error422("Untitled ID is required.", res);
     }
 
     //check refered_by  already is exists or not
     const isExistReferedByQuery = `SELECT * FROM refered_by WHERE LOWER(TRIM(refered_by_name))= ? AND untitled_id = ?`;
-    const isExistReferedByResult = await pool.query(isExistReferedByQuery, [ refered_by_name.toLowerCase(), untitled_id]);
+    const isExistReferedByResult = await pool.query(isExistReferedByQuery, [ refered_by_name.toLowerCase(), untitledId]);
     if (isExistReferedByResult[0].length > 0) {
         return error422(" Refered By Name is already exists.", res);
     } 
@@ -38,7 +45,7 @@ const addReferedBy = async (req, res) => {
     try {
         //insert into refered_by 
         const insertReferedByQuery = `INSERT INTO refered_by (refered_by_name, untitled_id ) VALUES (?, ? )`;
-        const insertReferedByValues= [refered_by_name, untitled_id ];
+        const insertReferedByValues= [refered_by_name, untitledId ];
         const refered_byResult = await pool.query(insertReferedByQuery, insertReferedByValues);
 
         res.status(200).json({

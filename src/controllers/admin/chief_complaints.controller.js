@@ -21,7 +21,16 @@ error500 = (error, res) => {
 const addChiefComplaints = async (req, res) => {
     const  chief_complaint  = req.body.chief_complaint  ? req.body.chief_complaint.trim()  : '';
     const untitled_id  = req.companyData.untitled_id ;
- 
+    
+    //  add a chief complaint for insert admin untitled id
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id =  untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId =  customerResult[0][0].untitled_id;
+
+
     if (!chief_complaint) {
         return error422("Chief Complaint is required.", res);
     }  else if (!untitled_id) {
@@ -30,7 +39,7 @@ const addChiefComplaints = async (req, res) => {
 
     //check chief_complaints  already is exists or not
     const isExistChiefComplaintsQuery = `SELECT * FROM chief_complaints WHERE LOWER(TRIM(chief_complaint))= ? AND untitled_id = ?`;
-    const isExistChiefComplaintsResult = await pool.query(isExistChiefComplaintsQuery, [ chief_complaint.toLowerCase(), untitled_id]);
+    const isExistChiefComplaintsResult = await pool.query(isExistChiefComplaintsQuery, [ chief_complaint.toLowerCase(), untitledId]);
     if (isExistChiefComplaintsResult[0].length > 0) {
         return error422(" Chief Complaints is already exists.", res);
     } 
@@ -38,7 +47,7 @@ const addChiefComplaints = async (req, res) => {
     try {
         //insert into chief_complaints 
         const insertChiefComplaintsQuery = `INSERT INTO chief_complaints (chief_complaint, untitled_id ) VALUES (?, ? )`;
-        const insertChiefComplaintsValues= [chief_complaint, untitled_id ];
+        const insertChiefComplaintsValues= [chief_complaint, untitledId ];
         const chief_complaintsResult = await pool.query(insertChiefComplaintsQuery, insertChiefComplaintsValues);
 
         res.status(200).json({

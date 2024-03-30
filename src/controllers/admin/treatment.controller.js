@@ -19,25 +19,33 @@ error500 = (error, res) => {
 }
 // add Treatment...
 const addTreatment = async (req, res) => {
-    const  treatment_name  = req.body.treatment_name  ? req.body.treatment_name.trim()  : '';
+    const treatment_name = req.body.treatment_name ? req.body.treatment_name.trim() : '';
     const description = req.body.description ? req.body.description.trim() : '';
-    const untitled_id  = req.companyData.untitled_id ;
- 
+    const untitled_id = req.companyData.untitled_id;
+
+    //  add a chief complaint for insert admin untitled id
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id = untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId = customerResult[0][0].untitled_id;
+
     if (!treatment_name) {
         return error422("Treatment Name is required.", res);
-    }  else if (!untitled_id) {
+    } else if (!untitledId) {
         return error422("Untitled ID is required.", res);
     }
     //check Treatment already is exists or not
     const isExistTreatmentQuery = `SELECT * FROM treatment WHERE LOWER(TRIM(treatment_name))= ? AND untitled_id = ?`;
-    const isExistTreatmentResult = await pool.query(isExistTreatmentQuery, [treatment_name.toLowerCase(), untitled_id ]);
+    const isExistTreatmentResult = await pool.query(isExistTreatmentQuery, [treatment_name.toLowerCase(), untitledId]);
     if (isExistTreatmentResult[0].length > 0) {
         return error422(" Treatment Name is already exists.", res);
-    } 
+    }
     try {
         //insert into treatment master
         const insertTreatmentQuery = `INSERT INTO treatment (treatment_name, description, untitled_id ) VALUES (?, ?, ? )`;
-        const insertTreatmentValues = [treatment_name, description, untitled_id ];
+        const insertTreatmentValues = [treatment_name, description, untitledId];
         const treatmentResult = await pool.query(insertTreatmentQuery, insertTreatmentValues);
         res.status(200).json({
             status: 200,
@@ -116,7 +124,7 @@ const getTreatments = async (req, res) => {
 // get treatment  by id...
 const getTreatment = async (req, res) => {
     const treatmentId = parseInt(req.params.id);
-    const untitled_id = req.companyData.untitled_id ;
+    const untitled_id = req.companyData.untitled_id;
 
     try {
         const treatmentQuery = `SELECT t.*, u.untitled_id  FROM  treatment t
@@ -179,7 +187,7 @@ const updateTreatment = async (req, res) => {
             message: "Treatment updated successfully.",
         });
     } catch (error) {
-        return error500(error,res);
+        return error500(error, res);
     }
 }
 
@@ -224,22 +232,22 @@ const onStatusChange = async (req, res) => {
             message: `Treatment ${statusMessage} successfully.`,
         });
     } catch (error) {
-        return error500(error,res);
+        return error500(error, res);
     }
 };
 //get treatment active...
 const getTreatmentWma = async (req, res) => {
-    const untitled_id = req.companyData.untitled_id ;
+    const untitled_id = req.companyData.untitled_id;
 
     const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
     const untitledResult = await pool.query(checkUntitledQuery);
-    const customer_id =  untitledResult[0][0].customer_id;
+    const customer_id = untitledResult[0][0].customer_id;
     const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
     const customerResult = await pool.query(isCustomerQuery);
-    const untitledId =  customerResult[0][0].untitled_id;
+    const untitledId = customerResult[0][0].untitled_id;
 
-    let treatmentQuery = `SELECT t.*  FROM treatment t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=2 AND t.untitled_id = ${untitledId } ORDER BY t.cts DESC`;
-    
+    let treatmentQuery = `SELECT t.*  FROM treatment t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=2 AND t.untitled_id = ${untitledId} ORDER BY t.cts DESC`;
+
     try {
         const treatmentResult = await pool.query(treatmentQuery);
         const treatments = treatmentResult[0];
@@ -250,9 +258,9 @@ const getTreatmentWma = async (req, res) => {
             data: treatments,
         });
     } catch (error) {
-        return error500(error,res);
+        return error500(error, res);
     }
-    
+
 }
 
 module.exports = {
