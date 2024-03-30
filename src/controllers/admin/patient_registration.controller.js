@@ -618,7 +618,7 @@ const patientRevisit = async (req, res) => {
   const untitled_id = req.companyData.untitled_id;
 
   const visit_type = req.body.visit_type;
-  if (!visit_type || visit_type != 'RE-VISIT') {
+  if (!visit_type || visit_type != 'RE_VISIT') {
     return error422("Patient Visit Type is required.", res);
   }
   const nowDate = new Date().toISOString().split("T")[0];
@@ -629,14 +629,15 @@ const patientRevisit = async (req, res) => {
   // const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
   // const customerResult = await pool.query(isCustomerQuery);
   // const untitledId =  customerResult[0][0].untitled_id;
+  
   try {
     //insert into patient_visit_list 
     const insertPatientVisitListQuery = 'INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)';
-    const insertPatientVisitListValues = [mrno, 'RE-VISIT', nowDate];
+    const insertPatientVisitListValues = [mrno, 'RE_VISIT', nowDate];
     const PatientVisitListResult = await pool.query(insertPatientVisitListQuery, insertPatientVisitListValues);
     return res.status(200).json({
       status: 200,
-      message: "Patient Re-Visit Successfully."
+      message: "Patient Re_Visit Successfully."
     })
   } catch (error) {
     return error422(error, res);

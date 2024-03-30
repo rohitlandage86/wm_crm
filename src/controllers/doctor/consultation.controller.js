@@ -364,6 +364,13 @@ const getConsultationById = async (req, res) => {
     if (!customer_id) {
         return error422("Customer Id is required.", res);
     }
+    //check if consultation exists
+    const isConsultationQuery = ` SELECT * FROM consultation WHERE consultation_id = ? AND customer_id = ?`
+    const isConsultationResult = await pool.query(isConsultationQuery,[consultationId, customer_id]);
+    if (isConsultationResult[0].length == 0) {
+        return error422("Consultation Not Found.", res);
+    }
+
     try {
         let getConsultationQuery = `SELECT c.*, p.* FROM consultation c 
         LEFT JOIN patient_registration p 
@@ -420,7 +427,8 @@ const getConsultationById = async (req, res) => {
 
         for (const fileUpload of consultations['consultationFileUploadDetails']) {
             try {
-                // Read the image file from the filesystem
+                if (fileUpload.image_name) {
+                    // Read the image file from the filesystem
                 const imagePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", fileUpload.image_name);
                 const imageBuffer = fs.readFileSync(imagePath);
 
@@ -429,6 +437,7 @@ const getConsultationById = async (req, res) => {
 
                 // Add the base64 image to the file upload object
                 fileUpload.imageBase64 = imageBase64;
+                }
             } catch (error) {
                 console.log(error);
                 // Handle error if image cannot be read or converted
@@ -912,7 +921,7 @@ const deleteConsultationFileUpload = async (req, res) => {
         return error500(error, res);
     }
 };
-// consultations list  by mrno
+// consultations list  by   mrno
 const getConsulationsByMrno = async (req, res) => {
     const { page, perPage, key } = req.query;
     const mrno = parseInt(req.params.id);
@@ -927,23 +936,23 @@ const getConsulationsByMrno = async (req, res) => {
     if (!customer_id) {
         return error422("Customer Id is required.", res);
     }
-    if (!key) {
+    if (!mrno) {
         return error422("Search key is required.", res)
     }
     try {
         let getConsultationQuery = `SELECT c.*, p.* FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
-        WHERE c.untitled_id = ${untitled_id}`;
+        WHERE c.untitled_id = ${untitled_id} AND p.mrno = ${mrno}`;
 
         let countQuery = `SELECT COUNT(*) AS total FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno 
-        WHERE c.untitled_id = ${untitled_id}`;
+        WHERE c.untitled_id = ${untitled_id} AND p.mrno = ${mrno}`
 
-        const lowercaseKey = key.toLowerCase().trim().replace(/'/g, "\\'");;
-        getConsultationQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
-        countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+        // const lowercaseKey = key.toLowerCase().trim().replace(/'/g, "\\'");;
+        // getConsultationQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+        // countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
 
         // Apply pagination if both page and perPage are provided
         let total = 0;
@@ -957,7 +966,7 @@ const getConsulationsByMrno = async (req, res) => {
         const consultations = result[0];
         const data = {
             status: 200,
-            message: "Search Consultations retrieved successfully",
+            message: "Consultations by MRNO  retrieved successfully",
             data: consultations
         }
         //Add pagination information if provided 
