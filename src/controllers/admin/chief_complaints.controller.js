@@ -253,7 +253,7 @@ const getChiefComplaintsWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
 
-    let chief_complaintsQuery = `SELECT c.*  FROM chief_complaints c LEFT JOIN untitled u ON u.untitled_id = c.untitled_id WHERE c.status = 1 AND u.category=2 AND c.untitled_id = ${untitledId} ORDER BY c.cts DESC`;
+    let chief_complaintsQuery = `SELECT c.*  FROM chief_complaints c LEFT JOIN untitled u ON u.untitled_id = c.untitled_id WHERE c.status = 1 AND u.category=2 AND c.untitled_id = ${untitledId} ORDER BY c.chief_complaint `;
     try {
         const chief_complaintsResult = await pool.query(chief_complaintsQuery);
         const chief_complaints = chief_complaintsResult[0];

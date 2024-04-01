@@ -284,7 +284,7 @@ const getServiceWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
 
-    let serviceQuery = `SELECT s.*  FROM services s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=2 AND s.untitled_id = ${untitledId} ORDER BY s.cts DESC`;
+    let serviceQuery = `SELECT s.*  FROM services s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=2 AND s.untitled_id = ${untitledId} ORDER BY s.service_name`;
     try {
         const serviceResult = await pool.query(serviceQuery);
         const services = serviceResult[0];

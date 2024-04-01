@@ -452,7 +452,7 @@ const onStatusChange = async (req, res) => {
 //get patient_registration active...
 const getPatientRegistrationWma = async (req, res) => {
   let patientregistrationQuery =
-    "SELECT p.*  FROM patient_registration p LEFT JOIN untitled u ON u.untitled_id = p.untitled_id WHERE p.status =1 AND u.category=1 ORDER BY p.cts DESC";
+    "SELECT p.*  FROM patient_registration p LEFT JOIN untitled u ON u.untitled_id = p.untitled_id WHERE p.status =1 AND u.category=1 ORDER BY p.patient_name ";
   try {
     const patientregistrationResult = await pool.query(patientregistrationQuery);
     const patient_registration = patientregistrationResult[0];

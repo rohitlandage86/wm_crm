@@ -7,6 +7,8 @@ router.post('/',checkAuth,consultationController.createConsultation);
 router.get('/',checkAuth,consultationController.getConsultationList);
 // router.get('/wma',checkAuth,consultationController.getModulesWma);
 router.get('/patient-consultation-by-mrno/:id',checkAuth,consultationController.getConsulationsByMrno);
+router.get('/consultation_diagnosis',checkAuth,consultationController.getConsultationDiagnosisList);
+router.get('/consultation_treatment',checkAuth,consultationController.getConsultationTreatmentList);
 router.get('/appointment',checkAuth,consultationController.getAppointmentList);
 router.get('/:id',checkAuth,consultationController.getConsultationById);
 router.put('/:id',checkAuth,consultationController.updateConsultation);

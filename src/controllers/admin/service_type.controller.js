@@ -247,7 +247,7 @@ const getServiceTypeWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
 
-    let servicetypeQuery = `SELECT s.*  FROM service_type s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=2 AND s.untitled_id = ${untitledId} ORDER BY s.cts DESC`;
+    let servicetypeQuery = `SELECT s.*  FROM service_type s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=2 AND s.untitled_id = ${untitledId} ORDER BY s.service_type_name`;
     try {
         const servicetypeResult = await pool.query(servicetypeQuery);
         const servicetype = servicetypeResult[0];

@@ -251,7 +251,7 @@ const getReferedByWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
 
-    let ReferedByQuery = `SELECT r.*  FROM refered_by r LEFT JOIN untitled u ON u.untitled_id = r.untitled_id WHERE r.status = 1 AND u.category=2 AND r.untitled_id = ${untitledId} ORDER BY r.cts DESC`;
+    let ReferedByQuery = `SELECT r.*  FROM refered_by r LEFT JOIN untitled u ON u.untitled_id = r.untitled_id WHERE r.status = 1 AND u.category=2 AND r.untitled_id = ${untitledId} ORDER BY r.refered_by_name `;
     try {
         const ReferedByResult = await pool.query(ReferedByQuery);
         const refered_by = ReferedByResult[0];

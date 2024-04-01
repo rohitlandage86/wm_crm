@@ -245,7 +245,7 @@ const getDesignationWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
 
-    let designationQuery = `SELECT d.*  FROM designation d LEFT JOIN untitled u ON u.untitled_id = d.untitled_id WHERE d.status = 1 AND u.category=2 AND d.untitled_id = ${untitledId} ORDER BY d.cts DESC`;
+    let designationQuery = `SELECT d.*  FROM designation d LEFT JOIN untitled u ON u.untitled_id = d.untitled_id WHERE d.status = 1 AND u.category=2 AND d.untitled_id = ${untitledId} ORDER BY d.designation_name`;
     try {
         const designationResult = await pool.query(designationQuery);
         const designation = designationResult[0];

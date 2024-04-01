@@ -228,7 +228,7 @@ const onStatusChange = async (req, res) => {
 //get Customer Type active...
 const getCustomerTypeWma = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
-    let customertypeQuery = `SELECT ct.*  FROM wm_cutomer_type ct LEFT JOIN untitled u ON u.untitled_id = ct.untitled_id WHERE  u.category=1 AND  ct.untitled_id = ${untitled_id} ORDER BY ct.cts DESC`;
+    let customertypeQuery = `SELECT ct.*  FROM wm_cutomer_type ct LEFT JOIN untitled u ON u.untitled_id = ct.untitled_id WHERE  u.category=1 AND  ct.untitled_id = ${untitled_id} ORDER BY ct.customer_type `;
     try {
         const customertypeResult = await pool.query(customertypeQuery);
         const customer_type = customertypeResult[0];

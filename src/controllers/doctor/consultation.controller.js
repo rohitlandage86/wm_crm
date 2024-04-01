@@ -313,8 +313,8 @@ const getConsultationList = async (req, res) => {
                 getConsultationQuery += ` AND p.status = 0`;
                 countQuery += ` AND p.status = 0`;
             } else {
-                getConsultationQuery += ` AND (LOWER(p.mrno) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
-                countQuery += ` AND (LOWER(p.mrno) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+                getConsultationQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+                countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
             }
         }
 
@@ -354,6 +354,11 @@ const getConsultationList = async (req, res) => {
 const getConsultationById = async (req, res) => {
     const consultationId = parseInt(req.params.id);
     const untitled_id = req.companyData.untitled_id;
+
+    if (!consultationId) {
+        return error422("Consultation id is required.", res);
+    }
+
     //check if untitled exists 
     const isUntitledExistQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
     const untitledResult = await pool.query(isUntitledExistQuery, [untitled_id]);
@@ -921,7 +926,7 @@ const deleteConsultationFileUpload = async (req, res) => {
         return error500(error, res);
     }
 };
-// consultations list  by   mrno
+
 const getConsulationsByMrno = async (req, res) => {
     const { page, perPage, key } = req.query;
     const mrno = parseInt(req.params.id);
@@ -937,10 +942,9 @@ const getConsulationsByMrno = async (req, res) => {
         return error422("Customer Id is required.", res);
     }
     if (!mrno) {
-        return error422("Search key is required.", res)
+        return error422("Mrno is required.", res)
     }
-    // LEFT JOIN consultation_diagnosis d 
-    // ON c.consultation_id = d.consultation_id
+
     try {
         let getConsultationQuery = `SELECT c.*, p.* FROM consultation c 
         LEFT JOIN patient_registration p 
@@ -955,48 +959,61 @@ const getConsulationsByMrno = async (req, res) => {
 
         // Apply pagination if both page and perPage are provided
         let total = 0;
-        // if (page && perPage) {
-        //     const totalResult = await pool.query(countQuery);
-        //     total = parseInt(totalResult[0][0].total);
-        //     const start = (page - 1) * perPage;
-        //     getConsultationQuery += ` LIMIT ${perPage} OFFSET ${start}`;
-        // }
+        if (page && perPage) {
+            const totalResult = await pool.query(countQuery);
+            total = parseInt(totalResult[0][0].total);
+            const start = (page - 1) * perPage;
+            getConsultationQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+        }
         const result = await pool.query(getConsultationQuery);
         const consultations = result[0];
-
-
-
-        let diagnosisArray = [];
-
-        for (let index = 0; index < consultations.length; index++)
-         {
+        //consulation diagnosis details
+        for (let index = 0; index < consultations.length; index++) {
             const element = consultations[index];
-            // console.log(element.consultation_id);
-
-            let consultationDiagnosisQuery = ` SELECT cd.*, d.diagnosis_name FROM consultation_diagnosis cd LEFT JOIN diagnosis d ON d.diagnosis_id = cd.diagnosis_id  WHERE cd.consultation_id = ${element.consultation_id}`
+            let consultationDiagnosisQuery = `
+                SELECT cd.*, d.diagnosis_name 
+                FROM consultation_diagnosis cd 
+                LEFT JOIN diagnosis d ON d.diagnosis_id = cd.diagnosis_id  
+                WHERE cd.consultation_id = ${element.consultation_id}`;
             let consultationDiagnosisResult = await pool.query(consultationDiagnosisQuery);
-            // console.log(consultationDiagnosisResult[0]);
-
-            for (let index = 0; index < consultationDiagnosisResult[0].length; index++) {
-                const element = consultationDiagnosisResult[0][index];
-                
-                for(let i=0;i<=consultationDiagnosisResult[0].length;i++)
-                {
-                    // console.log('hii',element);
-                    diagnosisArray[i][j]=[element.diagnosis_name][element.diagnosis_notes]
-                    for(let i=0;i<=consultationDiagnosisResult[0].length;i++)
-                    {
-                    // console.log('hii',element);
-                        diagnosisArray[i][j]=[element.diagnosis_notes]
-                    }           
-                    
-                    
-                }           
-                console.log(diagnosisArray);
-                
-            }
-            
+            consultations[index]['consultationDiagnosisDetails'] = consultationDiagnosisResult[0];
         }
+        //consultatin treatment details
+        for (let index = 0; index < consultations.length; index++) {
+            const element = consultations[index];
+            let consultationTreatmentQuery = `
+                SELECT ct.*, t.treatment_name
+                FROM consultation_treatment_advice ct 
+                LEFT JOIN treatment t ON t.treatment_id = ct.treatment_id  
+                WHERE ct.consultation_id = ${element.consultation_id}`;
+            let consultationTreatmentResult = await pool.query(consultationTreatmentQuery);
+            consultations[index]['consultationTreatmentDetails'] = consultationTreatmentResult[0];
+        }
+        //consultatin medicine details
+        for (let index = 0; index < consultations.length; index++) {
+            const element = consultations[index];
+            let consultationMedicineQuery = `
+                SELECT cm.*, m.medicines_name
+                FROM consultation_medicine cm
+                LEFT JOIN medicines m ON m.medicines_id = cm.medicines_id  
+                WHERE cm.consultation_id = ${element.consultation_id}`;
+            let consultationMedicineResult = await pool.query(consultationMedicineQuery);
+            consultations[index]['consultationMedicineDetails'] = consultationMedicineResult[0];
+        }
+
+        //consultatin file upload details
+        for (let index = 0; index < consultations.length; index++) {
+            const element = consultations[index];
+            let consultationFileUploadQuery = `
+                        SELECT cf.*
+                        FROM consultation_file_upload cf
+                        WHERE cf.consultation_id = ${element.consultation_id}`;
+            let consultationFileUploadResult = await pool.query(consultationFileUploadQuery);
+            consultations[index]['consultationFileUploadDetails'] = consultationFileUploadResult[0];
+        }
+
+
+
         const data = {
             status: 200,
             message: "Consultations by MRNO  retrieved successfully",
@@ -1096,6 +1113,175 @@ const getAppointmentList = async (req, res) => {
     }
 
 }
+//consultation diagnosis list for report 
+const getConsultationDiagnosisList = async (req, res) => {
+    const { page, perPage, key, fromDate, toDate, diagnosis_id } = req.query;
+
+    const untitled_id = req.companyData.untitled_id;
+
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id = untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId = customerResult[0][0].untitled_id;
+
+    let consultationDiagnosisQuery = `SELECT cd.*, c.*, d.diagnosis_name,  p.registration_date, p.mrno_entity_series, p.patient_name,p.gender,p.age, p.mobile_no, p.city,  em.name AS employee_name FROM 
+    consultation_diagnosis cd
+    LEFT JOIN consultation c
+    ON c.consultation_id = cd.consultation_id
+    LEFT JOIN patient_registration p
+    ON p.mrno = c.mrno
+    LEFT JOIN diagnosis d
+    ON d.diagnosis_id = cd.diagnosis_id
+    LEFT JOIN employee em
+    ON em.employee_id = p.employee_id
+    WHERE c.customer_id = ${customer_id}`;
+    let countQuery = `SELECT COUNT(*) AS total FROM 
+    consultation_diagnosis cd
+    LEFT JOIN consultation c
+    ON c.consultation_id = cd.consultation_id
+    LEFT JOIN patient_registration p
+    ON p.mrno = c.mrno
+    LEFT JOIN diagnosis d
+    ON d.diagnosis_id = cd.diagnosis_id
+    LEFT JOIN employee em
+    ON em.employee_id = p.employee_id
+    WHERE c.customer_id = ${customer_id}
+     `;
+
+    // filter from date and to date
+    if (fromDate && toDate) {
+        // Convert fromDate and toDate to UTC format
+        const fromUTCDate = new Date(fromDate).toISOString().split('T')[0];
+        const toUTCDate = new Date(toDate).toISOString().split('T')[0];
+
+        consultationDiagnosisQuery += ` AND DATE(c.cts) >= '${fromUTCDate}' AND DATE(c.cts) <= '${toUTCDate}'`;
+        countQuery += ` AND DATE(c.cts) >= '${fromUTCDate}' AND DATE(c.cts) <= '${toUTCDate}'`;
+    }
+    // filter diagnosis 
+    if (diagnosis_id) {
+        consultationDiagnosisQuery += ` AND cd.diagnosis_id = ${diagnosis_id} `;
+        countQuery += ` AND cd.diagnosis_id = ${diagnosis_id} `;
+    }
+
+    consultationDiagnosisQuery += ` ORDER BY c.cts DESC`;
+    try {
+        // Apply pagination if both page and perPage are provided
+        let total = 0;
+        if (page && perPage) {
+            const totalResult = await pool.query(countQuery);
+            total = parseInt(totalResult[0][0].total);
+
+            const start = (page - 1) * perPage;
+            consultationDiagnosisQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+        }
+        const consultationDiagnosisResult = await pool.query(consultationDiagnosisQuery);
+        const consultationDiagnosis = consultationDiagnosisResult[0];
+
+        const data = {
+            status: 200,
+            message: "Consultation Diagnosis retrieved successfully.",
+            data: consultationDiagnosis,
+        };
+        // Add pagination information if provided
+        if (page && perPage) {
+            data.pagination = {
+                per_page: perPage,
+                total: total,
+                current_page: page,
+                last_page: Math.ceil(total / perPage)
+            };
+        }
+
+        return res.status(200).json(data);
+    } catch (error) {
+        console.log(error);
+        return error500(error, res);
+    }
+
+}
+//consultation treatment list for report 
+const getConsultationTreatmentList = async (req, res) => {
+    const { page, perPage, key, fromDate, toDate, treatment_id } = req.query;
+    const untitled_id = req.companyData.untitled_id;
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id = untitledResult[0][0].customer_id;
+
+    let consultationTreatmentQuery = `SELECT ct.*, c.*, t.treatment_name,  p.registration_date, p.mrno_entity_series, p.patient_name,p.gender,p.age, p.mobile_no, p.city,  em.name AS employee_name FROM 
+    consultation_treatment_advice ct
+    LEFT JOIN consultation c
+    ON c.consultation_id = ct.consultation_id
+    LEFT JOIN patient_registration p
+    ON p.mrno = c.mrno
+    LEFT JOIN treatment t
+    ON t.treatment_id = ct.treatment_id
+    LEFT JOIN employee em
+    ON em.employee_id = p.employee_id
+    WHERE c.customer_id = ${customer_id}`;
+    let countQuery = `SELECT COUNT(*) AS total FROM 
+    consultation_treatment_advice ct
+    LEFT JOIN consultation c
+    ON c.consultation_id = ct.consultation_id
+    LEFT JOIN patient_registration p
+    ON p.mrno = c.mrno
+    LEFT JOIN treatment t
+    ON t.treatment_id = ct.treatment_id
+    LEFT JOIN employee em
+    ON em.employee_id = p.employee_id
+    WHERE c.customer_id = ${customer_id}`;
+
+    // filter from date and to date
+    if (fromDate && toDate) {
+        // Convert fromDate and toDate to UTC format
+        const fromUTCDate = new Date(fromDate).toISOString().split('T')[0];
+        const toUTCDate = new Date(toDate).toISOString().split('T')[0];
+
+        consultationTreatmentQuery += ` AND DATE(c.cts) >= '${fromUTCDate}' AND DATE(c.cts) <= '${toUTCDate}'`;
+        countQuery += ` AND DATE(c.cts) >= '${fromUTCDate}' AND DATE(c.cts) <= '${toUTCDate}'`;
+    }
+    // filter treatment  
+    if (treatment_id) {
+        consultationTreatmentQuery += ` AND ct.treatment_id = ${treatment_id} `;
+        countQuery += ` AND ct.treatment_id = ${treatment_id} `;
+    }
+    consultationTreatmentQuery += ` ORDER BY c.cts DESC`;
+    try {
+        // Apply pagination if both page and perPage are provided
+        let total = 0;
+        if (page && perPage) {
+            const totalResult = await pool.query(countQuery);
+            total = parseInt(totalResult[0][0].total);
+
+            const start = (page - 1) * perPage;
+            consultationTreatmentQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+        }
+        const consultationTreatmentResult = await pool.query(consultationTreatmentQuery);
+        const consultationTreatment = consultationTreatmentResult[0];
+
+        const data = {
+            status: 200,
+            message: "Consultation Treatment retrieved successfully.",
+            data: consultationTreatment,
+        };
+        // Add pagination information if provided
+        if (page && perPage) {
+            data.pagination = {
+                per_page: perPage,
+                total: total,
+                current_page: page,
+                last_page: Math.ceil(total / perPage)
+            };
+        }
+
+        return res.status(200).json(data);
+    } catch (error) {
+        console.log(error);
+        return error500(error, res);
+    }
+
+}
 module.exports = {
     createConsultation,
     getConsultationById,
@@ -1106,6 +1292,8 @@ module.exports = {
     deleteConsultationMedicine,
     deleteConsultationFileUpload,
     getConsulationsByMrno,
-    getAppointmentList
+    getAppointmentList,
+    getConsultationDiagnosisList,
+    getConsultationTreatmentList
 
 }

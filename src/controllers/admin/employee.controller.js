@@ -365,7 +365,7 @@ const getEmployeeWma = async (req, res) => {
   ON d.designation_id = e.designation_id
   LEFT JOIN untitled u
   ON u.employee_id = e.employee_id
-    WHERE e.status = 1 AND u.category=3 AND e.untitled_id = ${untitledId} ORDER BY e.cts DESC`;
+    WHERE e.status = 1 AND u.category=3 AND e.untitled_id = ${untitledId} ORDER BY e.name`;
   try {
     const employeeResult = await pool.query(employeeQuery);
     const employee = employeeResult[0];

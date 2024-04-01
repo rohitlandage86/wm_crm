@@ -230,25 +230,7 @@ const onStatusChange = async (req, res) => {
         return error500(error,res);
     }
 };
-//get category active...
-// const getCategoryWma = async (req, res) => {
-//     const untitled_id = req.companyData.untitled_id;
-    
-//     let categoryQuery = `SELECT c.*  FROM category c LEFT JOIN untitled u ON u.untitled_id = c.untitled_id WHERE c.status = 1 AND u.category=2  AND c.untitled_id = ${untitled_id} ORDER BY c.cts DESC`;
-//     try {
-//         const categoryResult = await pool.query(categoryQuery);
-//         const category = categoryResult[0];
 
-//         return res.status(200).json({
-//             status: 200,
-//             message: "Category retrieved successfully.",
-//             data: category,
-//         });
-//     } catch (error) {
-//         return error500(error,res);
-//     }
-    
-// }
 const getCategoryWma = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
     
@@ -259,7 +241,7 @@ const getCategoryWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
     
-    let categoryQuery = `SELECT c.*  FROM category c LEFT JOIN untitled u ON u.untitled_id = c.untitled_id WHERE c.status = 1 AND u.category=2  AND c.untitled_id  = ${untitledId} ORDER BY c.cts DESC`;
+    let categoryQuery = `SELECT c.*  FROM category c LEFT JOIN untitled u ON u.untitled_id = c.untitled_id WHERE c.status = 1 AND u.category=2  AND c.untitled_id  = ${untitledId} ORDER BY c.category_name `;
     try {
         const categoryResult = await pool.query(categoryQuery);
         const category = categoryResult[0];

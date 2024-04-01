@@ -246,7 +246,7 @@ const getSourceOfPatientWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
 
-    let sourceofpatientQuery = `SELECT s.*  FROM source_of_patient s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=2 AND s.untitled_id = ${untitledId} ORDER BY s.cts DESC`;
+    let sourceofpatientQuery = `SELECT s.*  FROM source_of_patient s LEFT JOIN untitled u ON u.untitled_id = s.untitled_id WHERE s.status = 1 AND u.category=2 AND s.untitled_id = ${untitledId} ORDER BY s.source_of_patient_name `;
     try {
         const sourceofpatientResult = await pool.query(sourceofpatientQuery);
         const sourceofpatient = sourceofpatientResult[0];

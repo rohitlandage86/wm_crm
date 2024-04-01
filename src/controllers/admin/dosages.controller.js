@@ -245,7 +245,7 @@ const getDosagesWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
 
-    let dosagesQuery = `SELECT d.*  FROM dosages d LEFT JOIN untitled u ON u.untitled_id = d.untitled_id WHERE d.status = 1 AND u.category=2 AND d.untitled_id = ${untitledId} ORDER BY d.cts DESC`;
+    let dosagesQuery = `SELECT d.*  FROM dosages d LEFT JOIN untitled u ON u.untitled_id = d.untitled_id WHERE d.status = 1 AND u.category=2 AND d.untitled_id = ${untitledId} ORDER BY d.dosage_name`;
     try {
         const dosagesResult = await pool.query(dosagesQuery);
         const dosages = dosagesResult[0];

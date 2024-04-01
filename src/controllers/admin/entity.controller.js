@@ -238,7 +238,7 @@ const getEntityWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
 
-    let entityQuery = `SELECT e.*  FROM entity e LEFT JOIN untitled u ON u.untitled_id = e.untitled_id WHERE e.status =1 AND u.category=2 AND e.untitled_id = ${untitledId} ORDER BY e.cts`;
+    let entityQuery = `SELECT e.*  FROM entity e LEFT JOIN untitled u ON u.untitled_id = e.untitled_id WHERE e.status =1 AND u.category=2 AND e.untitled_id = ${untitledId} ORDER BY e.entity_name`;
     try {
         const entityResult = await pool.query(entityQuery);
         const entitys = entityResult[0];

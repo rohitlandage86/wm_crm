@@ -229,7 +229,7 @@ const onStatusChange = async (req, res) => {
 //get wm modules active...
 const getModulesWma = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
-    let wmmodulesQuery = `SELECT m.*  FROM wm_modules m LEFT JOIN untitled u ON u.untitled_id = m.untitled_id WHERE  u.category=1 AND m.untitled_id = ${untitled_id} ORDER BY m.cts DESC`;
+    let wmmodulesQuery = `SELECT m.*  FROM wm_modules m LEFT JOIN untitled u ON u.untitled_id = m.untitled_id WHERE  u.category=1 AND m.untitled_id = ${untitled_id} ORDER BY m.module_name `;
     try {
         const wmmodulesResult = await pool.query(wmmodulesQuery);
         const wm_modules = wmmodulesResult[0];

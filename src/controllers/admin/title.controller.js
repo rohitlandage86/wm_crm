@@ -237,7 +237,7 @@ const getTitleWma = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
 
-    let titleQuery = `SELECT t.*  FROM title t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=2 AND t.untitled_id = ${untitledId} ORDER BY t.cts DESC`;
+    let titleQuery = `SELECT t.*  FROM title t LEFT JOIN untitled u ON u.untitled_id = t.untitled_id WHERE t.status = 1 AND u.category=2 AND t.untitled_id = ${untitledId} ORDER BY t.title_name `;
     try {
         const titleResult = await pool.query(titleQuery);
         const title = titleResult[0];
