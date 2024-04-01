@@ -366,7 +366,7 @@ const getConsultationById = async (req, res) => {
     }
     //check if consultation exists
     const isConsultationQuery = ` SELECT * FROM consultation WHERE consultation_id = ? AND customer_id = ?`
-    const isConsultationResult = await pool.query(isConsultationQuery,[consultationId, customer_id]);
+    const isConsultationResult = await pool.query(isConsultationQuery, [consultationId, customer_id]);
     if (isConsultationResult[0].length == 0) {
         return error422("Consultation Not Found.", res);
     }
@@ -429,14 +429,14 @@ const getConsultationById = async (req, res) => {
             try {
                 if (fileUpload.image_name) {
                     // Read the image file from the filesystem
-                const imagePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", fileUpload.image_name);
-                const imageBuffer = fs.readFileSync(imagePath);
+                    const imagePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", fileUpload.image_name);
+                    const imageBuffer = fs.readFileSync(imagePath);
 
-                // Convert the image buffer to base64
-                const imageBase64 = imageBuffer.toString('base64');
+                    // Convert the image buffer to base64
+                    const imageBase64 = imageBuffer.toString('base64');
 
-                // Add the base64 image to the file upload object
-                fileUpload.imageBase64 = imageBase64;
+                    // Add the base64 image to the file upload object
+                    fileUpload.imageBase64 = imageBase64;
                 }
             } catch (error) {
                 console.log(error);
@@ -939,31 +939,64 @@ const getConsulationsByMrno = async (req, res) => {
     if (!mrno) {
         return error422("Search key is required.", res)
     }
+    // LEFT JOIN consultation_diagnosis d 
+    // ON c.consultation_id = d.consultation_id
     try {
         let getConsultationQuery = `SELECT c.*, p.* FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
-        WHERE c.untitled_id = ${untitled_id} AND p.mrno = ${mrno}`;
+
+        WHERE c.untitled_id = ${untitled_id} AND p.mrno = ${mrno} `;
 
         let countQuery = `SELECT COUNT(*) AS total FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno 
         WHERE c.untitled_id = ${untitled_id} AND p.mrno = ${mrno}`
 
-        // const lowercaseKey = key.toLowerCase().trim().replace(/'/g, "\\'");;
-        // getConsultationQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
-        // countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
-
         // Apply pagination if both page and perPage are provided
         let total = 0;
-        if (page && perPage) {
-            const totalResult = await pool.query(countQuery);
-            total = parseInt(totalResult[0][0].total);
-            const start = (page - 1) * perPage;
-            getConsultationQuery += ` LIMIT ${perPage} OFFSET ${start}`;
-        }
+        // if (page && perPage) {
+        //     const totalResult = await pool.query(countQuery);
+        //     total = parseInt(totalResult[0][0].total);
+        //     const start = (page - 1) * perPage;
+        //     getConsultationQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+        // }
         const result = await pool.query(getConsultationQuery);
         const consultations = result[0];
+
+
+
+        let diagnosisArray = [];
+
+        for (let index = 0; index < consultations.length; index++)
+         {
+            const element = consultations[index];
+            // console.log(element.consultation_id);
+
+            let consultationDiagnosisQuery = ` SELECT cd.*, d.diagnosis_name FROM consultation_diagnosis cd LEFT JOIN diagnosis d ON d.diagnosis_id = cd.diagnosis_id  WHERE cd.consultation_id = ${element.consultation_id}`
+            let consultationDiagnosisResult = await pool.query(consultationDiagnosisQuery);
+            // console.log(consultationDiagnosisResult[0]);
+
+            for (let index = 0; index < consultationDiagnosisResult[0].length; index++) {
+                const element = consultationDiagnosisResult[0][index];
+                
+                for(let i=0;i<=consultationDiagnosisResult[0].length;i++)
+                {
+                    // console.log('hii',element);
+                    diagnosisArray[i][j]=[element.diagnosis_name][element.diagnosis_notes]
+                    for(let i=0;i<=consultationDiagnosisResult[0].length;i++)
+                    {
+                    // console.log('hii',element);
+                        diagnosisArray[i][j]=[element.diagnosis_notes]
+                    }           
+                    
+                    
+                }           
+                console.log(diagnosisArray);
+                
+            }
+            
+        }
         const data = {
             status: 200,
             message: "Consultations by MRNO  retrieved successfully",
