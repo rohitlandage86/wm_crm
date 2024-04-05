@@ -188,6 +188,12 @@ const getEmployees = async (req, res) => {
 const getEmployee = async (req, res) => {
   const employeeId = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
+  const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+  const untitledResult = await pool.query(checkUntitledQuery);
+  const customer_id =  untitledResult[0][0].customer_id;
+  const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+  const customerResult = await pool.query(isCustomerQuery);
+  const untitledId =  customerResult[0][0].untitled_id;
   try {
     const employeeQuery = `SELECT e.*, e.untitled_id, d.designation_name, cb.branch  FROM  employee e
       LEFT JOIN wm_customer_branch cb
@@ -195,7 +201,7 @@ const getEmployee = async (req, res) => {
       LEFT JOIN designation d
       ON d.designation_id = e.designation_id
       WHERE e.employee_id  = ? AND e.untitled_id = ?`;
-    const employeeResult = await pool.query(employeeQuery, [employeeId, untitled_id]);
+    const employeeResult = await pool.query(employeeQuery, [employeeId, untitledId]);
 
     if (employeeResult[0].length == 0) {
       return error422("Employee Not Found.", res);
