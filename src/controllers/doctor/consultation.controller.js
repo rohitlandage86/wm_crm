@@ -946,16 +946,19 @@ const getConsulationsByMrno = async (req, res) => {
     }
 
     try {
-        let getConsultationQuery = `SELECT c.*, p.* FROM consultation c 
+        let getConsultationQuery = `SELECT c., p., cc.chief_complaint FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
-
+        LEFT JOIN chief_complaints cc 
+        ON cc.chief_complaint_id = c.chief_complaints_id
         WHERE c.untitled_id = ${untitled_id} AND p.mrno = ${mrno} `;
 
         let countQuery = `SELECT COUNT(*) AS total FROM consultation c 
         LEFT JOIN patient_registration p 
-        ON p.mrno = c.mrno 
-        WHERE c.untitled_id = ${untitled_id} AND p.mrno = ${mrno}`
+        ON p.mrno = c.mrno
+        LEFT JOIN chief_complaints cc 
+        ON cc.chief_complaint_id = c.chief_complaints_id
+        WHERE c.untitled_id = ${untitled_id} AND p.mrno = ${mrno} `;
 
         // Apply pagination if both page and perPage are provided
         let total = 0;

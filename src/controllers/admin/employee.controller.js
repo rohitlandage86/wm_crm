@@ -279,7 +279,7 @@ const updateEmployee = async (req, res) => {
     // Update the employee record with new data
     const updateQuery = `
             UPDATE employee
-            SET name = ?,  email_id = ?, customer_id = ?, designation_id = ?, charges = ? untitled_id = ?, mts = ?
+            SET name = ?,  email_id = ?, customer_id = ?, designation_id = ?, charges = ?, untitled_id = ?, mts = ?
             WHERE employee_id = ?`;
     await connection.query(updateQuery, [name, email_id, customer_id, designation_id, charges, untitled_id, nowDate, employeeId]);
     // Insert untitled details
