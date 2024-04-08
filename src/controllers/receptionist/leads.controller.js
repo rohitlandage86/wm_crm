@@ -482,7 +482,7 @@ const deleteLeadFooter = async (req, res) => {
 };
 // get follow Leads  list...
 const getFollowUpLeadsList = async (req, res) => {
-  const { page, perPage, key, lead_date, fromDate, toDate, lead_status_id } = req.query;
+  const { page, perPage, key, lead_date, fromDate, toDate, lead_status_id ,follow_up_date} = req.query;
   const untitled_id = req.companyData.untitled_id;
 
   //check untitled_id already is exists or not
@@ -510,11 +510,17 @@ const getFollowUpLeadsList = async (req, res) => {
       LEFT JOIN lead_header lh
       ON lh.lead_hid = lf.lead_hid
       WHERE lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 `;
-    if (lead_date) {
-      const nowDate = new Date().toISOString().split("T")[0];
-      getFollowUpQuery += ` AND lf.follow_up_date = '${lead_date}'`;
-      countQuery += ` AND lf.follow_up_date = '${lead_date}'`;
+
+    if (follow_up_date) {
+      getFollowUpQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
+      countQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
     }
+    
+    if (lead_date) {
+      getFollowUpQuery += ` AND lh.lead_date = '${lead_date}'`;
+      countQuery += ` AND lh.lead_date = '${lead_date}'`;
+    }
+
     if (key) {
       const lowercaseKey = key.toLowerCase().trim();
       if (key === "activated") {

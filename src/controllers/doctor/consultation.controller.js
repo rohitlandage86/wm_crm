@@ -40,9 +40,7 @@ const createConsultation = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
     if (!mrno) {
         return error422("MRNO is required.", res);
-    } else if (!past_history) {
-        return error422("Past History is required", res);
-    } else if (!chief_complaints_id) {
+    }else if (!chief_complaints_id) {
         return error422("Cheif complaints is required")
     } else if (!untitled_id) {
         return error422("Untitled id is required.", res)
@@ -477,9 +475,7 @@ const updateConsultation = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
     if (!mrno) {
         return error422("MRNO is required.", res);
-    } else if (!past_history) {
-        return error422("Past History is required", res);
-    } else if (!chief_complaints_id) {
+    }else if (!chief_complaints_id) {
         return error422("Cheif complaints is required")
     } else if (!untitled_id) {
         return error422("Untitled id is required.", res)
