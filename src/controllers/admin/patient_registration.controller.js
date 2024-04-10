@@ -223,8 +223,7 @@ const getPatientRegistrations = async (req, res) => {
       getPatientRegistrationQuery += ` AND p.refered_by_id = '${refered_by_id}'`;
       countQuery += ` AND p.refered_by_id = '${refered_by_id}'`
     }
-    getPatientRegistrationQuery += " ORDER BY p.cts DESC";
-
+    getPatientRegistrationQuery += " ORDER BY p.registration_date DESC";
     // Apply pagination if both page and perPage are provided
     let total = 0;
     if (page && perPage) {
@@ -504,7 +503,7 @@ const getPatientVisitLists = async (req, res) => {
         countQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
       }
     }
-
+    getPatientVisitListsQuery += " ORDER BY p.mrno DESC";
     // Apply pagination if both page and perPage are provided
     let total = 0;
     if (page && perPage) {

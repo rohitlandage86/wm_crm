@@ -543,8 +543,8 @@ const getFollowUpLeadsList = async (req, res) => {
       countQuery += ` AND lf.lead_status_id = '${lead_status_id}'`
     }
 
-    getFollowUpQuery += " ORDER BY lf.follow_up_date DESC";
-    // Apply pagination if both page and perPage are provided
+    getFollowUpQuery += " ORDER BY lf.lead_hid DESC";
+    // Apply pagination if both page and perPage are provided 
     let total = 0;
     if (page && perPage) {
       const totalResult = await pool.query(countQuery);

@@ -292,7 +292,7 @@ const getConsultationList = async (req, res) => {
         return error422("Customer Id is required.", res);
     }
     try {
-        let getConsultationQuery = `SELECT c.*, p.* FROM consultation c 
+        let getConsultationQuery = `SELECT c.*, p.registration_date, p.mrno_entity_series, p.patient_name,p.gender,p.age, p.mobile_no, p.city, p.address FROM consultation c
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
         WHERE c.untitled_id = ${untitled_id}`;
@@ -942,7 +942,7 @@ const getConsulationsByMrno = async (req, res) => {
     }
 
     try {
-        let getConsultationQuery = `SELECT c., p., cc.chief_complaint FROM consultation c 
+        let getConsultationQuery = `SELECT c.*, p.*, cc.chief_complaint FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
         LEFT JOIN chief_complaints cc 
@@ -1035,7 +1035,7 @@ const getConsulationsByMrno = async (req, res) => {
 }
 //Appointment list 
 const getAppointmentList = async (req, res) => {
-    const { page, perPage, key, fromDate, toDate } = req.query;
+    const { page, perPage, key, fromDate, toDate, appointment_date } = req.query;
 
     const untitled_id = req.companyData.untitled_id;
 
@@ -1076,6 +1076,11 @@ const getAppointmentList = async (req, res) => {
         appointmentQuery += ` AND a.appointment_date >= '${fromDate}' AND a.appointment_date <= '${toDate}'`;
         countQuery += ` AND a.appointment_date >= '${fromDate}' AND a.appointment_date <= '${toDate}'`;
     }
+        // filter appointment date
+        if (appointment_date) {
+            appointmentQuery += ` AND a.appointment_date = '${appointment_date}'`;
+            countQuery += ` AND a.appointment_date = '${appointment_date}'`;
+        }
     appointmentQuery += ` ORDER BY a.cts DESC`;
     try {
         // Apply pagination if both page and perPage are provided
