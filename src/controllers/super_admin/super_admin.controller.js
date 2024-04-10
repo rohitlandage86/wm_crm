@@ -144,8 +144,10 @@ const login = async (req, res) => {
       untitledDataResult['customerModelDetails'] = customerModuleInfoResult[0]
     } else if (untitled.category ==3){
       const employeeInfoQuery = 
-      `SELECT u.email_id, u.category, u.untitled_id, u.employee_id, u.customer_id, cb.branch, cb.city, cb.state_id, s.state_name, cb.branch_id, e.name, e.designation_id, d.designation_name
+      `SELECT u.email_id, u.category, c.logo, c.short_logo, u.untitled_id, u.employee_id, u.customer_id, cb.branch, cb.city, cb.state_id, s.state_name, cb.branch_id, e.name, e.designation_id, d.designation_name
       FROM  untitled u 
+      LEFT JOIN wm_customer_header c 
+      ON c.customer_id = u.customer_id 
       LEFT JOIN employee e 
       ON e.employee_id = u.employee_id
       LEFT JOIN wm_customer_branch cb 

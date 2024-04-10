@@ -435,14 +435,16 @@ const getConsultationById = async (req, res) => {
                     const imagePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", fileUpload.image_name);
                     const imageBuffer = fs.readFileSync(imagePath);
 
-                    // Convert the image buffer to base64
-                    const imageBase64 = imageBuffer.toString('base64');
+                    // if (imageBuffer) {
+                    //     // Convert the image buffer to base64
+                    // const imageBase64 = imageBuffer.toString('base64');
 
-                    // Add the base64 image to the file upload object
-                    fileUpload.imageBase64 = imageBase64;
+                    // // Add the base64 image to the file upload object
+                    // fileUpload.imageBase64 = imageBase64;
+                    // }
                 }
             } catch (error) {
-                console.log(error);
+                return error500(error,res)
                 // Handle error if image cannot be read or converted
             }
         }
@@ -922,7 +924,7 @@ const deleteConsultationFileUpload = async (req, res) => {
         return error500(error, res);
     }
 };
-
+// patient consultation  history list
 const getConsulationsByMrno = async (req, res) => {
     const { page, perPage, key } = req.query;
     const mrno = parseInt(req.params.id);
@@ -992,9 +994,14 @@ const getConsulationsByMrno = async (req, res) => {
         for (let index = 0; index < consultations.length; index++) {
             const element = consultations[index];
             let consultationMedicineQuery = `
-                SELECT cm.*, m.medicines_name
+                SELECT cm.*, m.medicines_name, i.instruction, d.dosage_name
                 FROM consultation_medicine cm
-                LEFT JOIN medicines m ON m.medicines_id = cm.medicines_id  
+                LEFT JOIN medicines m 
+                ON m.medicines_id = cm.medicines_id  
+                LEFT JOIN instructions i 
+                ON i.instructions_id = cm.instructions_id 
+                LEFT JOIN dosages d
+                ON d.dosage_id = cm.dosages_id 
                 WHERE cm.consultation_id = ${element.consultation_id}`;
             let consultationMedicineResult = await pool.query(consultationMedicineQuery);
             consultations[index]['consultationMedicineDetails'] = consultationMedicineResult[0];
