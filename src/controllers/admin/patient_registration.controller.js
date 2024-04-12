@@ -72,12 +72,6 @@ const addPatientRegistration = async (req, res) => {
     return error422("Source Of Patient ID is required.", res);
   } else if (!employee_id) {
     return error422("Employee Id is required.", res);
-  } else if (!height) {
-    return error422("Hight is required.", res);
-  } else if (!weight) {
-    return error422("Weight is required.", res);
-  } else if (!bmi) {
-    return error422("BMI is required.", res);
   } else if (!amount) {
     return error422("Amount is required.", res);
   } else if (!refered_by_id) {
@@ -130,8 +124,8 @@ const addPatientRegistration = async (req, res) => {
     const isExistLeadHeaderResult = await connection.query(isExistLeadHeaderQuery, [mobile_no, customer_id]);
     if (isExistLeadHeaderResult[0].length > 0) {
       //insert  into lead footer  table...
-      const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls,lead_status_id) VALUES (?, ?, ?, ?, ?, ?)";
-      const insertLeadFooterValues = [isExistLeadHeaderResult[0][0].lead_hid, "PATIENT REGISTRATION", registration_date, '', '', 2];
+      const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls,lead_status_id, isFollowUp) VALUES (?, ?, ?, ?, ?, ?, ?)";
+      const insertLeadFooterValues = [isExistLeadHeaderResult[0][0].lead_hid, "PATIENT REGISTRATION", registration_date, '', '', 2, 1];
       const insertLeadFooterResult = await connection.query(insertLeadFooterQuery, insertLeadFooterValues);
     }
     await connection.commit();
@@ -277,7 +271,7 @@ const getPatientRegistration = async (req, res) => {
     return error422("MRNO is required.", res);
   }
   try {
-    const patientregistrationQuery = `SELECT p.*, u.untitled_id, e.entity_name, s.source_of_patient_name, em.name, r.refered_by_name  FROM  patient_registration p
+    const patientregistrationQuery = `SELECT p.*, u.untitled_id, e.entity_name, e.abbrivation, s.source_of_patient_name, em.name, r.refered_by_name  FROM  patient_registration p
         LEFT JOIN untitled u 
         ON p.untitled_id = u.untitled_id
         LEFT JOIN entity e
@@ -476,7 +470,7 @@ const getPatientVisitLists = async (req, res) => {
   const customer_id = untitledResult[0][0].customer_id;
 
   try {
-    let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name FROM patient_visit_list p 
+    let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name, e.abbrivation FROM patient_visit_list p 
     LEFT JOIN patient_registration pr 
     ON pr.mrno = p.mrno
     LEFT JOIN entity e
@@ -520,7 +514,7 @@ const getPatientVisitLists = async (req, res) => {
 
     const data = {
       status: 200,
-      message: "Patient Visit Listretrieved successfully",
+      message: "Patient Visit List retrieved successfully",
       data: patient_visit_list,
     };
     // Add pagination information if provided
@@ -549,7 +543,7 @@ const getPatientVisitCheckedLists = async (req, res) => {
   const customer_id = untitledResult[0][0].customer_id;
 
   try {
-    let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name FROM patient_visit_list p 
+    let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name, e.abbrivation FROM patient_visit_list p 
     LEFT JOIN patient_registration pr 
     ON pr.mrno = p.mrno
     LEFT JOIN entity e
@@ -698,7 +692,7 @@ const searchPatientRegistration = async (req, res) => {
     return error422("Search Key is required", res);
   }
   try {
-    let getPatientRegistrationQuery = `SELECT p.*, e.entity_name, s.source_of_patient_name, em.name, r.refered_by_name   FROM patient_registration p
+    let getPatientRegistrationQuery = `SELECT p.*, e.entity_name, e.abbrivation, s.source_of_patient_name, em.name, r.refered_by_name   FROM patient_registration p
           LEFT JOIN entity e
           ON e.entity_id = p.entity_id
           LEFT JOIN source_of_patient s
@@ -769,7 +763,7 @@ const getAllPatientVisitList = async (req, res) => {
   const customer_id = untitledResult[0][0].customer_id;
 
   try {
-    let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name, pr.customer_id FROM patient_visit_list p 
+    let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name, e.abbrivation, pr.customer_id FROM patient_visit_list p 
     LEFT JOIN patient_registration pr 
     ON pr.mrno = p.mrno
     LEFT JOIN entity e

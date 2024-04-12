@@ -1126,7 +1126,7 @@ const getAppointmentList = async (req, res) => {
 }
 //consultation diagnosis list for report 
 const getConsultationDiagnosisList = async (req, res) => {
-    const { page, perPage, key, fromDate, toDate, diagnosis_id } = req.query;
+    const { page, perPage, key, fromDate, toDate, diagnosis_id,entity_id } = req.query;
 
     const untitled_id = req.companyData.untitled_id;
 
@@ -1137,7 +1137,7 @@ const getConsultationDiagnosisList = async (req, res) => {
     const customerResult = await pool.query(isCustomerQuery);
     const untitledId = customerResult[0][0].untitled_id;
 
-    let consultationDiagnosisQuery = `SELECT cd.*, c.*, d.diagnosis_name,  p.registration_date, p.mrno_entity_series, p.patient_name,p.gender,p.age, p.mobile_no, p.city,  em.name AS employee_name FROM 
+    let consultationDiagnosisQuery = `SELECT cd.*, c.*, d.diagnosis_name,  p.registration_date, p.mrno_entity_series, p.patient_name,p.gender,p.age, p.mobile_no, p.city, e.abbrivation, e.entity_name, e.entity_id,  em.name AS employee_name FROM 
     consultation_diagnosis cd
     LEFT JOIN consultation c
     ON c.consultation_id = cd.consultation_id
@@ -1147,6 +1147,8 @@ const getConsultationDiagnosisList = async (req, res) => {
     ON d.diagnosis_id = cd.diagnosis_id
     LEFT JOIN employee em
     ON em.employee_id = p.employee_id
+    LEFT JOIN entity e
+    ON e.entity_id = p.entity_id
     WHERE c.customer_id = ${customer_id}`;
     let countQuery = `SELECT COUNT(*) AS total FROM 
     consultation_diagnosis cd
@@ -1158,6 +1160,8 @@ const getConsultationDiagnosisList = async (req, res) => {
     ON d.diagnosis_id = cd.diagnosis_id
     LEFT JOIN employee em
     ON em.employee_id = p.employee_id
+    LEFT JOIN entity e
+    ON e.entity_id = p.entity_id
     WHERE c.customer_id = ${customer_id}
      `;
 
@@ -1175,6 +1179,11 @@ const getConsultationDiagnosisList = async (req, res) => {
         consultationDiagnosisQuery += ` AND cd.diagnosis_id = ${diagnosis_id} `;
         countQuery += ` AND cd.diagnosis_id = ${diagnosis_id} `;
     }
+    //fitler entity id
+    if (entity_id) {
+        consultationDiagnosisQuery += ` AND p.entity_id = '${entity_id}'`;
+        countQuery += ` AND p.entity_id = '${entity_id}'`;
+      }
 
     consultationDiagnosisQuery += ` ORDER BY c.cts DESC`;
     try {
@@ -1214,13 +1223,13 @@ const getConsultationDiagnosisList = async (req, res) => {
 }
 //consultation treatment list for report 
 const getConsultationTreatmentList = async (req, res) => {
-    const { page, perPage, key, fromDate, toDate, treatment_id } = req.query;
+    const { page, perPage, key, fromDate, toDate, treatment_id, entity_id } = req.query;
     const untitled_id = req.companyData.untitled_id;
     const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
     const untitledResult = await pool.query(checkUntitledQuery);
     const customer_id = untitledResult[0][0].customer_id;
 
-    let consultationTreatmentQuery = `SELECT ct.*, c.*, t.treatment_name,  p.registration_date, p.mrno_entity_series, p.patient_name,p.gender,p.age, p.mobile_no, p.city,  em.name AS employee_name FROM 
+    let consultationTreatmentQuery = `SELECT ct.*, c.*, t.treatment_name,  p.registration_date, p.mrno_entity_series, p.patient_name,p.gender,p.age, p.mobile_no, p.city, e.abbrivation, e.entity_name, e.entity_id,  em.name AS employee_name  FROM 
     consultation_treatment_advice ct
     LEFT JOIN consultation c
     ON c.consultation_id = ct.consultation_id
@@ -1230,6 +1239,8 @@ const getConsultationTreatmentList = async (req, res) => {
     ON t.treatment_id = ct.treatment_id
     LEFT JOIN employee em
     ON em.employee_id = p.employee_id
+    LEFT JOIN entity e
+    ON e.entity_id = p.entity_id
     WHERE c.customer_id = ${customer_id}`;
     let countQuery = `SELECT COUNT(*) AS total FROM 
     consultation_treatment_advice ct
@@ -1241,6 +1252,8 @@ const getConsultationTreatmentList = async (req, res) => {
     ON t.treatment_id = ct.treatment_id
     LEFT JOIN employee em
     ON em.employee_id = p.employee_id
+    LEFT JOIN entity e
+    ON e.entity_id = p.entity_id
     WHERE c.customer_id = ${customer_id}`;
 
     // filter from date and to date
@@ -1257,6 +1270,11 @@ const getConsultationTreatmentList = async (req, res) => {
         consultationTreatmentQuery += ` AND ct.treatment_id = ${treatment_id} `;
         countQuery += ` AND ct.treatment_id = ${treatment_id} `;
     }
+        //fitler entity id
+        if (entity_id) {
+            consultationTreatmentQuery += ` AND p.entity_id = '${entity_id}'`;
+            countQuery += ` AND p.entity_id = '${entity_id}'`;
+          }
     consultationTreatmentQuery += ` ORDER BY c.cts DESC`;
     try {
         // Apply pagination if both page and perPage are provided
