@@ -775,11 +775,11 @@ const getPendingFollowUpLeadsList = async (req, res) => {
       ON e.employee_id = u.employee_id
       LEFT JOIN lead_status ls
       ON ls.lead_status_id = lf.lead_status_id
-      WHERE lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}'`;
+      WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}') OR lf.lead_status_id = 4`;
     let countQuery = ` SELECT COUNT(*) AS total FROM lead_footer lf  
       LEFT JOIN lead_header lh
       ON lh.lead_hid = lf.lead_hid
-      WHERE lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}' `;
+      WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}') OR lf.lead_status_id = 4 `;
 
     // if (follow_up_date) {
     //   getFollowUpQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
@@ -846,6 +846,102 @@ const getPendingFollowUpLeadsList = async (req, res) => {
     return error500(error, res);
   }
 };
+//lead follow up report page
+const getFollowUpLeadsReportList = async (req, res) => {
+  const { page, perPage, key, lead_date, fromDate, toDate, lead_status_id ,follow_up_date} = req.query;
+  const untitled_id = req.companyData.untitled_id;
+
+  //check untitled_id already is exists or not
+  const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const employeeDetails = isExistUntitledIdResult[0][0];
+  if (employeeDetails.customer_id == 0) {
+    return error422("Customer Not Found.", res);
+  }
+
+  try {
+    let getFollowUpQuery = ` SELECT lf.*, lh.category_id, lh.name, lh.category_id, lh.mobile_number, lh.customer_id, lh.untitled_id, lh.note, lh.lead_date, lh.city, c.category_name, e.name as employee_name, ls.lead_status FROM lead_footer lf 
+      LEFT JOIN lead_header lh
+      ON lh.lead_hid = lf.lead_hid
+      LEFT JOIN category c
+      ON c.category_id = lh.category_id
+      LEFT JOIN untitled u
+      ON u.untitled_id = lh.untitled_id
+      LEFT JOIN employee e
+      ON e.employee_id = u.employee_id
+      LEFT JOIN lead_status ls
+      ON ls.lead_status_id = lf.lead_status_id
+      WHERE lh.customer_id = ${employeeDetails.customer_id}  `;
+    let countQuery = ` SELECT COUNT(*) AS total FROM lead_footer lf  
+      LEFT JOIN lead_header lh
+      ON lh.lead_hid = lf.lead_hid
+      WHERE lh.customer_id = ${employeeDetails.customer_id} `;
+
+    if (follow_up_date) {
+      getFollowUpQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
+      countQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
+    }
+    
+    if (lead_date) {
+      getFollowUpQuery += ` AND lh.lead_date = '${lead_date}'`;
+      countQuery += ` AND lh.lead_date = '${lead_date}'`;
+    }
+
+    if (key) {
+      const lowercaseKey = key.toLowerCase().trim();
+      if (key === "activated") {
+        getFollowUpQuery += ` AND l.status = 1`;
+        countQuery += ` AND l.status = 1`;
+      } else if (key === "deactivated") {
+        getFollowUpQuery += ` AND l.status = 0`;
+        countQuery += ` AND l.status = 0`;
+      } else {
+        getFollowUpQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
+        countQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
+      }
+    }
+    if (fromDate&&toDate) {
+      getFollowUpQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;      
+      countQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;      
+    }
+    if (lead_status_id) {
+      getFollowUpQuery += ` AND lf.lead_status_id = '${lead_status_id}'`;
+      countQuery += ` AND lf.lead_status_id = '${lead_status_id}'`
+    }
+
+    getFollowUpQuery += " ORDER BY lf.lead_hid DESC";
+    // Apply pagination if both page and perPage are provided 
+    let total = 0;
+    if (page && perPage) {
+      const totalResult = await pool.query(countQuery);
+      total = parseInt(totalResult[0][0].total);
+
+      const start = (page - 1) * perPage;
+      getFollowUpQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+    }
+    const result = await pool.query(getFollowUpQuery);
+    const lead_header = result[0];
+
+    const data = {
+      status: 200,
+      message: " Leads retrieved successfully",
+      data: lead_header,
+    };
+    // Add pagination information if provided
+    if (page && perPage) {
+      data.pagination = {
+        per_page: perPage,
+        total: total,
+        current_page: page,
+        last_page: Math.ceil(total / perPage),
+      };
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return error500(error, res);
+  }
+};
 module.exports = {
   addleads,
   getLeadHeaders,
@@ -856,5 +952,6 @@ module.exports = {
   getFollowUpLeadsList,
   updateFollowUpLead,
   searchLeadHeaders,
-  getPendingFollowUpLeadsList
+  getPendingFollowUpLeadsList,
+  getFollowUpLeadsReportList
 };

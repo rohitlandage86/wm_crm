@@ -123,6 +123,11 @@ const addPatientRegistration = async (req, res) => {
     const isExistLeadHeaderQuery = `SELECT * FROM lead_header WHERE mobile_number = ? AND customer_id = ?`;
     const isExistLeadHeaderResult = await connection.query(isExistLeadHeaderQuery, [mobile_no, customer_id]);
     if (isExistLeadHeaderResult[0].length > 0) {
+      const updateLeadFooterQuery = `
+              UPDATE lead_footer
+              SET  isFollowUp = ?
+              WHERE lead_hid = ?`;
+            await connection.query(updateLeadFooterQuery, [1, isExistLeadHeaderResult[0][0].lead_hid]);
       //insert  into lead footer  table...
       const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls,lead_status_id, isFollowUp) VALUES (?, ?, ?, ?, ?, ?, ?)";
       const insertLeadFooterValues = [isExistLeadHeaderResult[0][0].lead_hid, "PATIENT REGISTRATION", registration_date, '', '', 2, 1];

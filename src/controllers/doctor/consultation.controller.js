@@ -279,7 +279,7 @@ const createConsultation = async (req, res) => {
 
 // get consultation list 
 const getConsultationList = async (req, res) => {
-    const { page, perPage, key } = req.query;
+    const { page, perPage, key, current_day } = req.query;
     const untitled_id = req.companyData.untitled_id;
     //check if untitled exists 
     const isUntitledExistQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
@@ -292,14 +292,18 @@ const getConsultationList = async (req, res) => {
         return error422("Customer Id is required.", res);
     }
     try {
-        let getConsultationQuery = `SELECT c.*, p.registration_date, p.mrno_entity_series, p.patient_name,p.gender,p.age, p.mobile_no, p.city, p.address FROM consultation c
+        let getConsultationQuery = `SELECT c.*, p.registration_date, p.mrno_entity_series, p.patient_name, p.gender, p.age, p.mobile_no, p.city, p.address, p.entity_id, e.abbrivation, e.entity_name FROM consultation c
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
+        LEFT JOIN entity e
+        ON e.entity_id = p.entity_id
         WHERE c.untitled_id = ${untitled_id}`;
 
         let countQuery = `SELECT COUNT(*) AS total FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno 
+        LEFT JOIN entity e
+        ON e.entity_id = p.entity_id
         WHERE c.untitled_id = ${untitled_id}`;
 
         if (key) {
@@ -316,7 +320,10 @@ const getConsultationList = async (req, res) => {
             }
         }
 
-
+        if (current_day) {
+            getConsultationQuery += ` AND DATE(c.cts) = '${current_day}'`;
+            countQuery += ` AND DATE(c.cts) = '${current_day}'`;
+          }
 
         // Apply pagination if both page and perPage are provided
         let total = 0;
@@ -435,13 +442,13 @@ const getConsultationById = async (req, res) => {
                     const imagePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", fileUpload.image_name);
                     const imageBuffer = fs.readFileSync(imagePath);
 
-                    // if (imageBuffer) {
-                    //     // Convert the image buffer to base64
-                    // const imageBase64 = imageBuffer.toString('base64');
+                    if (imageBuffer) {
+                        // Convert the image buffer to base64
+                    const imageBase64 = imageBuffer.toString('base64');
 
-                    // // Add the base64 image to the file upload object
-                    // fileUpload.imageBase64 = imageBase64;
-                    // }
+                    // Add the base64 image to the file upload object
+                    fileUpload.imageBase64 = imageBase64;
+                    }
                 }
             } catch (error) {
                 return error500(error,res)
