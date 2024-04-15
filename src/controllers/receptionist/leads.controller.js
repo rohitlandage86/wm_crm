@@ -657,10 +657,13 @@ const updateFollowUpLead = async (req, res) => {
             return error500(error, res);
           }
         } else {
-
+          let isFollowUp = 0;
+          if (lead_status_id == 3||lead_status_id == '3') {
+            isFollowUp = 1
+          }
           //insert lead header id  and lead footer id  table...
-          const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id) VALUES (?, ?, ?, ?, ?, ?)";
-          const insertLeadFooterValues = [leadId, comments, follow_up_date, calling_time, no_of_calls, lead_status_id];
+          const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id, isFollowUp ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+          const insertLeadFooterValues = [leadId, comments, follow_up_date, calling_time, no_of_calls, lead_status_id, isFollowUp];
           const insertLeadFooterResult = await connection.query(insertLeadFooterQuery, insertLeadFooterValues);
           const lead_fid = insertLeadFooterResult[0].insertId;
         }
@@ -764,18 +767,18 @@ const getPendingFollowUpLeadsList = async (req, res) => {
   }
 
   try {
-    let getFollowUpQuery = ` SELECT lf.*, lh.category_id, lh.name, lh.category_id, lh.mobile_number, lh.customer_id, lh.untitled_id, lh.note, lh.lead_date, lh.city, c.category_name, e.name as employee_name, ls.lead_status FROM lead_footer lf 
-      LEFT JOIN lead_header lh
-      ON lh.lead_hid = lf.lead_hid
-      LEFT JOIN category c
-      ON c.category_id = lh.category_id
-      LEFT JOIN untitled u
-      ON u.untitled_id = lh.untitled_id
-      LEFT JOIN employee e
-      ON e.employee_id = u.employee_id
-      LEFT JOIN lead_status ls
-      ON ls.lead_status_id = lf.lead_status_id
-      WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}') OR lf.lead_status_id = 4`;
+      let getFollowUpQuery = ` SELECT lf.*, lh.category_id, lh.name, lh.category_id, lh.mobile_number, lh.customer_id, lh.untitled_id, lh.note, lh.lead_date, lh.city, c.category_name, e.name as employee_name, ls.lead_status FROM lead_footer lf 
+        LEFT JOIN lead_header lh
+        ON lh.lead_hid = lf.lead_hid
+        LEFT JOIN category c
+        ON c.category_id = lh.category_id
+        LEFT JOIN untitled u
+        ON u.untitled_id = lh.untitled_id
+        LEFT JOIN employee e
+        ON e.employee_id = u.employee_id
+        LEFT JOIN lead_status ls
+        ON ls.lead_status_id = lf.lead_status_id
+        WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}') OR (lf.lead_status_id = 4 AND lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}')` ;
     let countQuery = ` SELECT COUNT(*) AS total FROM lead_footer lf  
       LEFT JOIN lead_header lh
       ON lh.lead_hid = lf.lead_hid
@@ -942,6 +945,74 @@ const getFollowUpLeadsReportList = async (req, res) => {
     return error500(error, res);
   }
 };
+
+//Today calls lead list...
+const getTodaysCallsLeadList = async (req, res) => {
+  const { page, perPage, key, lead_date, fromDate, today_date, lead_status_id ,follow_up_date} = req.query;
+  const untitled_id = req.companyData.untitled_id;
+  if (!today_date) {
+    return error422("Days is required.",res);
+  }
+  //check untitled_id already is exists or not
+  const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const employeeDetails = isExistUntitledIdResult[0][0];
+  if (employeeDetails.customer_id == 0) {
+    return error422("Customer Not Found.", res);
+  }
+
+  try {
+      let getFollowUpQuery = ` SELECT lf.*, lh.category_id, lh.name, lh.category_id, lh.mobile_number, lh.customer_id, lh.untitled_id, lh.note, lh.lead_date, lh.city, c.category_name, e.name as employee_name, ls.lead_status FROM lead_footer lf 
+        LEFT JOIN lead_header lh
+        ON lh.lead_hid = lf.lead_hid
+        LEFT JOIN category c
+        ON c.category_id = lh.category_id
+        LEFT JOIN untitled u
+        ON u.untitled_id = lh.untitled_id
+        LEFT JOIN employee e
+        ON e.employee_id = u.employee_id
+        LEFT JOIN lead_status ls
+        ON ls.lead_status_id = lf.lead_status_id
+        WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 1 AND lf.follow_up_date = '${today_date}') ` ;
+    let countQuery = ` SELECT COUNT(*) AS total FROM lead_footer lf  
+      LEFT JOIN lead_header lh
+      ON lh.lead_hid = lf.lead_hid
+      WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 1 AND lf.follow_up_date = '${today_date}')` ;
+
+   
+    getFollowUpQuery += " ORDER BY lf.cts ASC";
+    // Apply pagination if both page and perPage are provided 
+    let total = 0;
+    if (page && perPage) {
+      const totalResult = await pool.query(countQuery);
+      total = parseInt(totalResult[0][0].total);
+
+      const start = (page - 1) * perPage;
+      getFollowUpQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+    }
+    const result = await pool.query(getFollowUpQuery);
+    const lead_header = result[0];
+
+    const data = {
+      status: 200,
+      message: "Todays calls leads retrieved successfully",
+      data: lead_header,
+    };
+    // Add pagination information if provided
+    if (page && perPage) {
+      data.pagination = {
+        per_page: perPage,
+        total: total,
+        current_page: page,
+        last_page: Math.ceil(total / perPage),
+      };
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return error500(error, res);
+  }
+};
 module.exports = {
   addleads,
   getLeadHeaders,
@@ -953,5 +1024,6 @@ module.exports = {
   updateFollowUpLead,
   searchLeadHeaders,
   getPendingFollowUpLeadsList,
-  getFollowUpLeadsReportList
+  getFollowUpLeadsReportList,
+  getTodaysCallsLeadList
 };

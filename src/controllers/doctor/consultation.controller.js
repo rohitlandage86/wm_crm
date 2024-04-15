@@ -951,7 +951,7 @@ const getConsulationsByMrno = async (req, res) => {
     }
 
     try {
-        let getConsultationQuery = `SELECT c.*, p.*, cc.chief_complaint FROM consultation c 
+        let getConsultationQuery = `SELECT c.*, p.registration_date, p.mrno_entity_series, p.patient_name, p.gender, p.age, p.mobile_no, p.city, p.address, p.entity_id, cc.chief_complaint FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
         LEFT JOIN chief_complaints cc 
