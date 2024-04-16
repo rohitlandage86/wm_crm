@@ -76,11 +76,17 @@ const addEmployee = async (req, res) => {
   }
 
   //check employee  already is exists or notemployee
-  const isExistEmployeeQuery = `SELECT * FROM employee  WHERE LOWER(TRIM(email_id)) = ? AND untitled_id = ?`;
-  const isExistEmployeeResult = await pool.query(isExistEmployeeQuery, [email_id.toLowerCase(), untitled_id]);
+  const isExistEmployeeQuery = `SELECT * FROM employee  WHERE LOWER(TRIM(email_id)) = ?`;
+  const isExistEmployeeResult = await pool.query(isExistEmployeeQuery, [email_id.toLowerCase()]);
   if (isExistEmployeeResult[0].length > 0) {
     return error422("Email ID is already exists.", res);
   }
+    //check employee  already is exists or notemployee
+    const isExistEmailQuery = `SELECT * FROM untitled  WHERE LOWER(TRIM(email_id)) = ?`;
+    const isExistEmailResult = await pool.query(isExistEmailQuery, [email_id.toLowerCase()]);
+    if (isExistEmailResult[0].length > 0) {
+      return error422("Email ID is already exists.", res);
+    }
   // Attempt to obtain a database connection
   let connection = await getConnection();
 
@@ -269,7 +275,7 @@ const updateEmployee = async (req, res) => {
     charges = 0;
    }
     // Check if the provided employee exists and is active
-    const existingEmployeeQuery ="SELECT * FROM employee WHERE  LOWER(TRIM(email_id)) = ? AND (employee_id!=? AND untitled_id = ?)";
+    const existingEmployeeQuery ="SELECT * FROM employee WHERE  LOWER(TRIM(email_id)) = ? AND (employee_id!=? )";
     const existingEmployeeResult = await pool.query(existingEmployeeQuery, [email_id.toLowerCase(),employeeId, untitled_id]);
     if (existingEmployeeResult[0].length > 0) {
       return error422("Email ID already exists.", res);

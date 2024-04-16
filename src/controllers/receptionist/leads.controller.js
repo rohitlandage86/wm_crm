@@ -973,11 +973,11 @@ const getTodaysCallsLeadList = async (req, res) => {
         ON e.employee_id = u.employee_id
         LEFT JOIN lead_status ls
         ON ls.lead_status_id = lf.lead_status_id
-        WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 1 AND lf.follow_up_date = '${today_date}') ` ;
+        WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 1 AND DATE(lf.cts )= '${today_date}') ` ;
     let countQuery = ` SELECT COUNT(*) AS total FROM lead_footer lf  
       LEFT JOIN lead_header lh
       ON lh.lead_hid = lf.lead_hid
-      WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 1 AND lf.follow_up_date = '${today_date}')` ;
+      WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 1 AND lf.cts = '${today_date}')` ;
 
    
     getFollowUpQuery += " ORDER BY lf.cts ASC";

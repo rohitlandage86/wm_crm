@@ -30,7 +30,7 @@ const addEntity = async (req, res) => {
         return error422("Untitled ID is required.", res);
     }
     //check Entity already is exists or not
-    const isExistEntityQuery = `SELECT * FROM entity WHERE LOWER(TRIM(entity_name))= ? OR LOWER(TRIM(abbrivation)) = ? AND untitled_id = ?`;
+    const isExistEntityQuery = `SELECT * FROM entity WHERE (LOWER(TRIM(entity_name))= ? OR LOWER(TRIM(abbrivation)) = ?) AND untitled_id = ?`;
     const isExistEntityResult = await pool.query(isExistEntityQuery, [entity_name.toLowerCase(),abbrivation.toLowerCase(), untitled_id]);
     if (isExistEntityResult[0].length > 0) {
         return error422(" Entity Name Or Abbrivation is already exists.", res);

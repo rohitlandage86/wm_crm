@@ -169,7 +169,12 @@ const  createCustomer = async (req, res) => {
   }
 
 
-
+  //check employee  already is exists or not customer
+  const isExistEmailQuery = `SELECT * FROM untitled  WHERE LOWER(TRIM(email_id)) = ?`;
+  const isExistEmailResult = await pool.query(isExistEmailQuery, [customer_email.toLowerCase()]);
+  if (isExistEmailResult[0].length > 0) {
+    return error422("Email ID is already exists.", res);
+  }
   //check wm customer header  already is exists or not
   const isExistCustomerHeaderQuery = `SELECT * FROM wm_customer_header WHERE LOWER(TRIM(customer_email))= ? OR LOWER(TRIM(customer_phone)) = ?`;
   const isExistCustomerHeaderResult = await pool.query(
