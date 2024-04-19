@@ -169,7 +169,7 @@ const  createCustomer = async (req, res) => {
   }
 
 
-  //check employee  already is exists or not customer
+  //check email id  already is exists or not customer
   const isExistEmailQuery = `SELECT * FROM untitled  WHERE LOWER(TRIM(email_id)) = ?`;
   const isExistEmailResult = await pool.query(isExistEmailQuery, [customer_email.toLowerCase()]);
   if (isExistEmailResult[0].length > 0) {
@@ -252,6 +252,7 @@ const  createCustomer = async (req, res) => {
           const insertCustomerModulesQuery = "INSERT INTO wm_customer_modules (customer_id, module_id,untitled_id) VALUES (?, ?,?)";
           const insertCustomerModulesValues = [customer_id, module_id, customer_untitled_id,];
           const insertCustomerModulesResult = await connection.query(insertCustomerModulesQuery, insertCustomerModulesValues);
+
         } catch (error) {
           // Handle errors
           await connection.rollback();
@@ -407,10 +408,13 @@ const updateCustomer = async (req, res) => {
   const customer_phone = req.body.customer_phone ? req.body.customer_phone : "";
   const longLogoName = req.body.longLogoName ? req.body.longLogoName.trim() : "";
   const longLogoBase64 = req.body.longLogoBase64 ? req.body.longLogoBase64.trim() : "";
+  const shortLogoName = req.body.shortLogoName ? req.body.shortLogoName.trim() : "";
+  const shortLogoBase64 = req.body.shortLogoBase64 ? req.body.shortLogoBase64.trim() : "";
   const customer_type_id = req.body.customer_type_id ? req.body.customer_type_id : "";
   const branch = req.body.branch ? req.body.branch.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
-  const state_id = req.body.state_id ? req.body.state_id.trim() : null;
+  const state_id = req.body.state_id ? req.body.state_id.trim() : "";
+  const password = req.body.password ? req.body.password.trim() : "";
   const customerModulesDetails = req.body.customerModulesDetails ? req.body.customerModulesDetails : "";
   const untitled_id = req.companyData.untitled_id;
 
@@ -423,9 +427,13 @@ const updateCustomer = async (req, res) => {
   } else if (!customer_phone) {
     return error422("Customer Phone is required.", res);
   } else if (!longLogoName) {
-    return error422("Long Logo Name is required.", res);
+    return error422("Long logo name is required.", res);
   } else if (!longLogoBase64) {
-    return error422("Long LogoBase64 is required.", res);
+    return error422(" Long logo base64 is required.", res);
+  } else if (!shortLogoName) {
+    return error422("Short logo name is required.", res);
+  } else if (!shortLogoBase64) {
+    return error422("Short logo base64 is required.", res);
   } else if (!customer_type_id) {
     return error422("Customer Type ID is required.", res);
   } else if (!branch) {
@@ -434,10 +442,10 @@ const updateCustomer = async (req, res) => {
     return error422("City is required.", res);
   } else if (!state_id) {
     return error422("State id is required.", res);
+  } else if (!customerId) {
+    return error422("Customer Id is required.", res);
   } else if (!untitled_id) {
     return error422("Untitled ID is required.", res);
-  } else if (!customerId) {
-    return error422("Customer Id   is required.", res);
   }
 
   // Check if customer exists
@@ -468,13 +476,20 @@ const updateCustomer = async (req, res) => {
     }
   }
 
+  //check email id  already is exists or not customer
+  const isExistEmailQuery = `SELECT * FROM untitled  WHERE LOWER(TRIM(email_id)) = ? AND untitled_id!=?`;
+  const isExistEmailResult = await pool.query(isExistEmailQuery, [customer_email.toLowerCase(), untitled_id]);
+  if (isExistEmailResult[0].length > 0) {
+    return error422("Email ID is already exists.", res);
+  }
+
   //check wm customer header  already is exists or not
-  const isExistCustomerHeaderQuery = `SELECT * FROM wm_customer_header WHERE LOWER(TRIM(customer_email))= ? OR TRIM(customer_phone) = ?`;
-  const isExistCustomerHeaderResult = await pool.query(isExistCustomerHeaderQuery, [customer_email.toLowerCase(), customer_phone]);
+  const isExistCustomerHeaderQuery = `SELECT * FROM wm_customer_header WHERE (LOWER(TRIM(customer_email))= ? OR TRIM(customer_phone) = ? ) AND customer_id!=?`;
+  const isExistCustomerHeaderResult = await pool.query(isExistCustomerHeaderQuery, [customer_email.toLowerCase(), customer_phone, customerId]);
   if (isExistCustomerHeaderResult[0].length > 0) {
     return error422("Customer Email And Phone Number is already exists.", res);
   }
-
+return res.json("HII");
   // Attempt to obtain a database connection
   let connection = await getConnection();
 
