@@ -31,7 +31,9 @@ const addleads = async (req, res) => {
   const city = req.body.city ? req.body.city.trim() : "";
   const mobile_number = req.body.mobile_number ? req.body.mobile_number : "";
   const note = req.body.note ? req.body.note.trim() : "";
-  const leadFooterDetails = req.body.leadFooterDetails ? req.body.leadFooterDetails : "";
+  const leadFooterDetails = req.body.leadFooterDetails
+    ? req.body.leadFooterDetails
+    : "";
   const untitled_id = req.companyData.untitled_id;
 
   if (!lead_date) {
@@ -47,24 +49,39 @@ const addleads = async (req, res) => {
   }
   // if lead Footer Details
   if (leadFooterDetails) {
-    if (!leadFooterDetails || !Array.isArray(leadFooterDetails) || leadFooterDetails.length === 0) {
-      return error422("No Leads Details provided or invalid Leads Details data.", res);
+    if (
+      !leadFooterDetails ||
+      !Array.isArray(leadFooterDetails) ||
+      leadFooterDetails.length === 0
+    ) {
+      return error422(
+        "No Leads Details provided or invalid Leads Details data.",
+        res
+      );
     }
 
     if (leadFooterDetails.length != 1) {
-      return error422("No Leads Details provided or invalid Leads Details data.", res);
+      return error422(
+        "No Leads Details provided or invalid Leads Details data.",
+        res
+      );
     }
   }
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
   }
   //check lead_header already is exists or not
   const isExistLeadHeaderQuery = `SELECT * FROM lead_header WHERE mobile_number = ? AND customer_id = ?`;
-  const isExistLeadHeaderResult = await pool.query(isExistLeadHeaderQuery, [mobile_number, employeeDetails.customer_id]);
+  const isExistLeadHeaderResult = await pool.query(isExistLeadHeaderQuery, [
+    mobile_number,
+    employeeDetails.customer_id,
+  ]);
   if (isExistLeadHeaderResult[0].length > 0) {
     return error422("Mobile Number is already exists.", res);
   }
@@ -76,9 +93,22 @@ const addleads = async (req, res) => {
     // Start a transaction
     await connection.beginTransaction();
     // Insert lead_header details
-    const insertLeadHeaderQuery = "INSERT INTO lead_header (lead_date, name, category_id, city, mobile_number, note, untitled_id,customer_id) VALUES (?,?,?,?,?,?,?,?)";
-    const insertLeadHeaderValues = [lead_date, name, category_id, city, mobile_number, note, untitled_id, employeeDetails.customer_id];
-    const insertLeadHeaderResult = await connection.query(insertLeadHeaderQuery, insertLeadHeaderValues);
+    const insertLeadHeaderQuery =
+      "INSERT INTO lead_header (lead_date, name, category_id, city, mobile_number, note, untitled_id,customer_id) VALUES (?,?,?,?,?,?,?,?)";
+    const insertLeadHeaderValues = [
+      lead_date,
+      name,
+      category_id,
+      city,
+      mobile_number,
+      note,
+      untitled_id,
+      employeeDetails.customer_id,
+    ];
+    const insertLeadHeaderResult = await connection.query(
+      insertLeadHeaderQuery,
+      insertLeadHeaderValues
+    );
     const lead_hid = insertLeadHeaderResult[0].insertId;
 
     if (leadFooterDetails) {
@@ -90,9 +120,20 @@ const addleads = async (req, res) => {
         const follow_up_date = row.follow_up_date;
 
         //insert  into lead footer  table...
-        const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls,lead_status_id) VALUES (?, ?, ?,?,?,?)";
-        const insertLeadFooterValues = [lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id];
-        const insertLeadFooterResult = await connection.query(insertLeadFooterQuery, insertLeadFooterValues);
+        const insertLeadFooterQuery =
+          "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls,lead_status_id) VALUES (?, ?, ?,?,?,?)";
+        const insertLeadFooterValues = [
+          lead_hid,
+          comments,
+          follow_up_date,
+          calling_time,
+          no_of_calls,
+          lead_status_id,
+        ];
+        const insertLeadFooterResult = await connection.query(
+          insertLeadFooterQuery,
+          insertLeadFooterValues
+        );
       }
     }
 
@@ -118,7 +159,9 @@ const getLeadHeaders = async (req, res) => {
 
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
@@ -206,7 +249,9 @@ const getLeadsHeaderById = async (req, res) => {
 
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
@@ -214,11 +259,13 @@ const getLeadsHeaderById = async (req, res) => {
 
   try {
     const leadheaderQuery = `SELECT * FROM lead_header WHERE lead_hid = ? AND customer_id = ?`;
-    const leadheaderResult = await pool.query(leadheaderQuery, [leadheaderId, employeeDetails.customer_id]);
+    const leadheaderResult = await pool.query(leadheaderQuery, [
+      leadheaderId,
+      employeeDetails.customer_id,
+    ]);
 
     const leadfooterQuery = `SELECT lf.*, ls.lead_status FROM lead_footer lf LEFT JOIN lead_status ls ON ls.lead_status_id = lf.lead_status_id  WHERE lf.lead_hid = ?`;
     const leadfooterResult = await pool.query(leadfooterQuery, [leadheaderId]);
-
 
     if (leadheaderResult[0].length === 0) {
       return error422("Leads Not Found.", res);
@@ -243,7 +290,9 @@ const updateLeads = async (req, res) => {
   const city = req.body.city ? req.body.city.trim() : "";
   const mobile_number = req.body.mobile_number ? req.body.mobile_number : "";
   const note = req.body.note ? req.body.note.trim() : "";
-  const leadFooterDetails = req.body.leadFooterDetails ? req.body.leadFooterDetails : "";
+  const leadFooterDetails = req.body.leadFooterDetails
+    ? req.body.leadFooterDetails
+    : "";
   const untitled_id = req.companyData.untitled_id;
   if (!lead_date) {
     return error422("Lead Date is required.", res);
@@ -272,26 +321,43 @@ const updateLeads = async (req, res) => {
 
   // if lead Footer details
   if (leadFooterDetails) {
-    if (!leadFooterDetails || !Array.isArray(leadFooterDetails) || leadFooterDetails.length === 0) {
-      return error422("No Leads  details provided or invalid Lead  Details data.", res);
+    if (
+      !leadFooterDetails ||
+      !Array.isArray(leadFooterDetails) ||
+      leadFooterDetails.length === 0
+    ) {
+      return error422(
+        "No Leads  details provided or invalid Lead  Details data.",
+        res
+      );
     }
     //check duplicate lead_footer id
     const duplicates = leadFooterDetails.reduce((acc, lead_footer, index) => {
       const { lead_fid } = lead_footer;
-      const foundIndex = leadFooterDetails.findIndex((l, i) => i !== index && l.lead_fid === lead_fid);
-      if (foundIndex !== -1 && !acc.some((entry) => entry.index === foundIndex)) {
+      const foundIndex = leadFooterDetails.findIndex(
+        (l, i) => i !== index && l.lead_fid === lead_fid
+      );
+      if (
+        foundIndex !== -1 &&
+        !acc.some((entry) => entry.index === foundIndex)
+      ) {
         acc.push({ index, foundIndex });
       }
       return acc;
     }, []);
 
     if (duplicates.length > 0) {
-      return error422("Duplicate lead footer found in lead footer Details array.", res);
+      return error422(
+        "Duplicate lead footer found in lead footer Details array.",
+        res
+      );
     }
   }
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
@@ -299,7 +365,11 @@ const updateLeads = async (req, res) => {
 
   //check lead_header  already is exists or not
   const isExistLeadHeaderQuery = `SELECT * FROM lead_header WHERE mobile_number = ? AND lead_hid!=? AND customer_id = ? `;
-  const isExistLeadHeaderResult = await pool.query(isExistLeadHeaderQuery, [mobile_number, leadId, employeeDetails.customer_id]);
+  const isExistLeadHeaderResult = await pool.query(isExistLeadHeaderQuery, [
+    mobile_number,
+    leadId,
+    employeeDetails.customer_id,
+  ]);
   if (isExistLeadHeaderResult[0].length > 0) {
     return error422("Mobile Number is already exists.", res);
   }
@@ -316,7 +386,18 @@ const updateLeads = async (req, res) => {
          UPDATE lead_header
          SET lead_date = ?, category_id = ?, name = ?, mobile_number = ?, note=?, city=?, customer_id=?, untitled_id=?,  mts = ?
          WHERE lead_hid = ? `;
-    await connection.query(updateQuery, [lead_date, category_id, name, mobile_number, note, city, employeeDetails.customer_id, untitled_id, nowDate, leadId]);
+    await connection.query(updateQuery, [
+      lead_date,
+      category_id,
+      name,
+      mobile_number,
+      note,
+      city,
+      employeeDetails.customer_id,
+      untitled_id,
+      nowDate,
+      leadId,
+    ]);
 
     if (leadFooterDetails) {
       for (const row of leadFooterDetails) {
@@ -329,28 +410,47 @@ const updateLeads = async (req, res) => {
 
         // Check if lead footer exists
         const leadfooterQuery = "SELECT * FROM lead_footer WHERE lead_fid = ?";
-        const leadfooterResult = await connection.query(leadfooterQuery, [lead_fid]);
+        const leadfooterResult = await connection.query(leadfooterQuery, [
+          lead_fid,
+        ]);
 
         if (leadfooterResult[0].length > 0) {
-
           try {
             // Update the lead footer record with new data
             const updateLeadFooterQuery = `
             UPDATE lead_footer
             SET lead_hid = ?, comments = ?, calling_time = ?, no_of_calls = ?, lead_status_id = ?, follow_up_date = ?
             WHERE lead_fid = ?`;
-            await connection.query(updateLeadFooterQuery, [leadId, comments, calling_time, no_of_calls, lead_status_id, follow_up_date, lead_fid]);
+            await connection.query(updateLeadFooterQuery, [
+              leadId,
+              comments,
+              calling_time,
+              no_of_calls,
+              lead_status_id,
+              follow_up_date,
+              lead_fid,
+            ]);
           } catch (error) {
             // Rollback the transaction
             await connection.rollback();
             return error500(error, res);
           }
         } else {
-
           //insert lead header id  and lead footer id  table...
-          const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id) VALUES (?, ?, ?, ?, ?, ?)";
-          const insertLeadFooterValues = [leadId, comments, follow_up_date, calling_time, no_of_calls, lead_status_id];
-          const insertLeadFooterResult = await connection.query(insertLeadFooterQuery, insertLeadFooterValues);
+          const insertLeadFooterQuery =
+            "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id) VALUES (?, ?, ?, ?, ?, ?)";
+          const insertLeadFooterValues = [
+            leadId,
+            comments,
+            follow_up_date,
+            calling_time,
+            no_of_calls,
+            lead_status_id,
+          ];
+          const insertLeadFooterResult = await connection.query(
+            insertLeadFooterQuery,
+            insertLeadFooterValues
+          );
           const lead_fid = insertLeadFooterResult[0].insertId;
         }
       }
@@ -374,7 +474,9 @@ const onStatusChange = async (req, res) => {
 
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
@@ -382,8 +484,12 @@ const onStatusChange = async (req, res) => {
 
   try {
     // Check if the lead_header  exists
-    const leadheaderQuery = "SELECT * FROM lead_header WHERE lead_hid = ? AND customer_id  = ?";
-    const leadheaderResult = await pool.query(leadheaderQuery, [leadheaderId, employeeDetails.customer_id]);
+    const leadheaderQuery =
+      "SELECT * FROM lead_header WHERE lead_hid = ? AND customer_id  = ?";
+    const leadheaderResult = await pool.query(leadheaderQuery, [
+      leadheaderId,
+      employeeDetails.customer_id,
+    ]);
 
     if (leadheaderResult[0].length == 0) {
       return res.status(404).json({
@@ -444,11 +550,8 @@ const getLeadHeaderWma = async (req, res) => {
 const deleteLeadFooter = async (req, res) => {
   const lead_fid = parseInt(req.params.id);
 
-  const isLeadFooterQuery =
-    "SELECT * FROM lead_footer WHERE lead_fid = ?";
-  const leadfooterResult = await pool.query(isLeadFooterQuery, [
-    lead_fid,
-  ]);
+  const isLeadFooterQuery = "SELECT * FROM lead_footer WHERE lead_fid = ?";
+  const leadfooterResult = await pool.query(isLeadFooterQuery, [lead_fid]);
   if (leadfooterResult[0].length == 0) {
     return res.status(404).json({
       status: 404,
@@ -462,13 +565,11 @@ const deleteLeadFooter = async (req, res) => {
     // Start a transaction
     await connection.beginTransaction();
     //delete lead footer
-    const deleteLeadFooterQuery =
-      "DELETE FROM lead_footer WHERE lead_fid = ?";
+    const deleteLeadFooterQuery = "DELETE FROM lead_footer WHERE lead_fid = ?";
     const deleteLeadFooterResult = await connection.query(
       deleteLeadFooterQuery,
       [lead_fid]
     );
-
 
     await connection.commit();
     return res.json({
@@ -482,12 +583,23 @@ const deleteLeadFooter = async (req, res) => {
 };
 // get follow Leads  list...
 const getFollowUpLeadsList = async (req, res) => {
-  const { page, perPage, key, lead_date, fromDate, toDate, lead_status_id ,follow_up_date} = req.query;
+  const {
+    page,
+    perPage,
+    key,
+    lead_date,
+    fromDate,
+    toDate,
+    lead_status_id,
+    follow_up_date,
+  } = req.query;
   const untitled_id = req.companyData.untitled_id;
 
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
@@ -515,7 +627,7 @@ const getFollowUpLeadsList = async (req, res) => {
       getFollowUpQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
       countQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
     }
-    
+
     if (lead_date) {
       getFollowUpQuery += ` AND lh.lead_date = '${lead_date}'`;
       countQuery += ` AND lh.lead_date = '${lead_date}'`;
@@ -534,17 +646,17 @@ const getFollowUpLeadsList = async (req, res) => {
         countQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
       }
     }
-    if (fromDate&&toDate) {
-      getFollowUpQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;      
-      countQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;      
+    if (fromDate && toDate) {
+      getFollowUpQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;
+      countQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;
     }
     if (lead_status_id) {
       getFollowUpQuery += ` AND lf.lead_status_id = '${lead_status_id}'`;
-      countQuery += ` AND lf.lead_status_id = '${lead_status_id}'`
+      countQuery += ` AND lf.lead_status_id = '${lead_status_id}'`;
     }
 
     getFollowUpQuery += " ORDER BY lf.lead_hid DESC";
-    // Apply pagination if both page and perPage are provided 
+    // Apply pagination if both page and perPage are provided
     let total = 0;
     if (page && perPage) {
       const totalResult = await pool.query(countQuery);
@@ -578,7 +690,9 @@ const getFollowUpLeadsList = async (req, res) => {
 };
 const updateFollowUpLead = async (req, res) => {
   const leadId = parseInt(req.params.id);
-  const leadFooterDetails = req.body.leadFooterDetails ? req.body.leadFooterDetails : "";
+  const leadFooterDetails = req.body.leadFooterDetails
+    ? req.body.leadFooterDetails
+    : "";
   const untitled_id = req.companyData.untitled_id;
   if (!untitled_id) {
     return error422("Untitled ID is required.", res);
@@ -595,32 +709,47 @@ const updateFollowUpLead = async (req, res) => {
 
   // if lead Footer details
   if (leadFooterDetails) {
-    if (!leadFooterDetails || !Array.isArray(leadFooterDetails) || leadFooterDetails.length === 0) {
-      return error422("No Leads  details provided or invalid Lead  Details data.", res);
+    if (
+      !leadFooterDetails ||
+      !Array.isArray(leadFooterDetails) ||
+      leadFooterDetails.length === 0
+    ) {
+      return error422(
+        "No Leads  details provided or invalid Lead  Details data.",
+        res
+      );
     }
     //check duplicate lead_footer id
     const duplicates = leadFooterDetails.reduce((acc, lead_footer, index) => {
       const { lead_fid } = lead_footer;
-      const foundIndex = leadFooterDetails.findIndex((l, i) => i !== index && l.lead_fid === lead_fid);
-      if (foundIndex !== -1 && !acc.some((entry) => entry.index === foundIndex)) {
+      const foundIndex = leadFooterDetails.findIndex(
+        (l, i) => i !== index && l.lead_fid === lead_fid
+      );
+      if (
+        foundIndex !== -1 &&
+        !acc.some((entry) => entry.index === foundIndex)
+      ) {
         acc.push({ index, foundIndex });
       }
       return acc;
     }, []);
 
     if (duplicates.length > 0) {
-      return error422("Duplicate lead footer found in lead footer Details array.", res);
+      return error422(
+        "Duplicate lead footer found in lead footer Details array.",
+        res
+      );
     }
   }
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
   }
-
-
 
   // Attempt to obtain a database connection
   let connection = await getConnection();
@@ -641,7 +770,9 @@ const updateFollowUpLead = async (req, res) => {
 
         // Check if lead footer exists
         const leadfooterQuery = "SELECT * FROM lead_footer WHERE lead_fid = ?";
-        const leadfooterResult = await connection.query(leadfooterQuery, [lead_fid]);
+        const leadfooterResult = await connection.query(leadfooterQuery, [
+          lead_fid,
+        ]);
 
         if (leadfooterResult[0].length > 0) {
           try {
@@ -650,7 +781,16 @@ const updateFollowUpLead = async (req, res) => {
               UPDATE lead_footer
               SET lead_hid = ?, comments = ?, calling_time = ?, no_of_calls = ?, lead_status_id = ?, follow_up_date = ?, isFollowUp = ?
               WHERE lead_fid = ?`;
-            await connection.query(updateLeadFooterQuery, [leadId, comments, calling_time, no_of_calls, lead_status_id, follow_up_date, 1, lead_fid]);
+            await connection.query(updateLeadFooterQuery, [
+              leadId,
+              comments,
+              calling_time,
+              no_of_calls,
+              lead_status_id,
+              follow_up_date,
+              1,
+              lead_fid,
+            ]);
           } catch (error) {
             // Rollback the transaction
             await connection.rollback();
@@ -658,13 +798,25 @@ const updateFollowUpLead = async (req, res) => {
           }
         } else {
           let isFollowUp = 0;
-          if (lead_status_id == 3||lead_status_id == '3') {
-            isFollowUp = 1
+          if (lead_status_id == 3 || lead_status_id == "3") {
+            isFollowUp = 1;
           }
           //insert lead header id  and lead footer id  table...
-          const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id, isFollowUp ) VALUES (?, ?, ?, ?, ?, ?, ?)";
-          const insertLeadFooterValues = [leadId, comments, follow_up_date, calling_time, no_of_calls, lead_status_id, isFollowUp];
-          const insertLeadFooterResult = await connection.query(insertLeadFooterQuery, insertLeadFooterValues);
+          const insertLeadFooterQuery =
+            "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id, isFollowUp ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+          const insertLeadFooterValues = [
+            leadId,
+            comments,
+            follow_up_date,
+            calling_time,
+            no_of_calls,
+            lead_status_id,
+            isFollowUp,
+          ];
+          const insertLeadFooterResult = await connection.query(
+            insertLeadFooterQuery,
+            insertLeadFooterValues
+          );
           const lead_fid = insertLeadFooterResult[0].insertId;
         }
       }
@@ -679,7 +831,7 @@ const updateFollowUpLead = async (req, res) => {
     await connection.rollback();
     return error500(error, res);
   }
-}
+};
 // search lead_headers list...
 const searchLeadHeaders = async (req, res) => {
   const { page, perPage, key } = req.query;
@@ -687,7 +839,9 @@ const searchLeadHeaders = async (req, res) => {
 
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
@@ -755,19 +909,30 @@ const searchLeadHeaders = async (req, res) => {
 };
 //pending follow up lead list...
 const getPendingFollowUpLeadsList = async (req, res) => {
-  const { page, perPage, key, lead_date, fromDate, current_date, lead_status_id ,follow_up_date} = req.query;
+  const {
+    page,
+    perPage,
+    key,
+    lead_date,
+    fromDate,
+    current_date,
+    lead_status_id,
+    follow_up_date,
+  } = req.query;
   const untitled_id = req.companyData.untitled_id;
 
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
   }
 
   try {
-      let getFollowUpQuery = ` SELECT lf.*, lh.category_id, lh.name, lh.category_id, lh.mobile_number, lh.customer_id, lh.untitled_id, lh.note, lh.lead_date, lh.city, c.category_name, e.name as employee_name, ls.lead_status FROM lead_footer lf 
+    let getFollowUpQuery = ` SELECT lf.*, lh.category_id, lh.name, lh.category_id, lh.mobile_number, lh.customer_id, lh.untitled_id, lh.note, lh.lead_date, lh.city, c.category_name, e.name as employee_name, ls.lead_status FROM lead_footer lf 
         LEFT JOIN lead_header lh
         ON lh.lead_hid = lf.lead_hid
         LEFT JOIN category c
@@ -778,7 +943,7 @@ const getPendingFollowUpLeadsList = async (req, res) => {
         ON e.employee_id = u.employee_id
         LEFT JOIN lead_status ls
         ON ls.lead_status_id = lf.lead_status_id
-        WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}') OR (lf.lead_status_id = 4 AND lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}')` ;
+        WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}') OR (lf.lead_status_id = 4 AND lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}')`;
     let countQuery = ` SELECT COUNT(*) AS total FROM lead_footer lf  
       LEFT JOIN lead_header lh
       ON lh.lead_hid = lf.lead_hid
@@ -788,7 +953,7 @@ const getPendingFollowUpLeadsList = async (req, res) => {
     //   getFollowUpQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
     //   countQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
     // }
-    
+
     // if (lead_date) {
     //   getFollowUpQuery += ` AND lh.lead_date = '${lead_date}'`;
     //   countQuery += ` AND lh.lead_date = '${lead_date}'`;
@@ -808,8 +973,8 @@ const getPendingFollowUpLeadsList = async (req, res) => {
     //   }
     // }
     // if (fromDate&&toDate) {
-    //   getFollowUpQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;      
-    //   countQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;      
+    //   getFollowUpQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;
+    //   countQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;
     // }
     // if (lead_status_id) {
     //   getFollowUpQuery += ` AND lf.lead_status_id = '${lead_status_id}'`;
@@ -817,7 +982,7 @@ const getPendingFollowUpLeadsList = async (req, res) => {
     // }
 
     getFollowUpQuery += " ORDER BY lf.lead_hid DESC";
-    // Apply pagination if both page and perPage are provided 
+    // Apply pagination if both page and perPage are provided
     let total = 0;
     if (page && perPage) {
       const totalResult = await pool.query(countQuery);
@@ -851,12 +1016,23 @@ const getPendingFollowUpLeadsList = async (req, res) => {
 };
 //lead follow up report page
 const getFollowUpLeadsReportList = async (req, res) => {
-  const { page, perPage, key, lead_date, fromDate, toDate, lead_status_id ,follow_up_date} = req.query;
+  const {
+    page,
+    perPage,
+    key,
+    lead_date,
+    fromDate,
+    toDate,
+    lead_status_id,
+    follow_up_date,
+  } = req.query;
   const untitled_id = req.companyData.untitled_id;
 
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
@@ -884,7 +1060,7 @@ const getFollowUpLeadsReportList = async (req, res) => {
       getFollowUpQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
       countQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
     }
-    
+
     if (lead_date) {
       getFollowUpQuery += ` AND lh.lead_date = '${lead_date}'`;
       countQuery += ` AND lh.lead_date = '${lead_date}'`;
@@ -903,17 +1079,17 @@ const getFollowUpLeadsReportList = async (req, res) => {
         countQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
       }
     }
-    if (fromDate&&toDate) {
-      getFollowUpQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;      
-      countQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;      
+    if (fromDate && toDate) {
+      getFollowUpQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;
+      countQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;
     }
     if (lead_status_id) {
       getFollowUpQuery += ` AND lf.lead_status_id = '${lead_status_id}'`;
-      countQuery += ` AND lf.lead_status_id = '${lead_status_id}'`
+      countQuery += ` AND lf.lead_status_id = '${lead_status_id}'`;
     }
 
     getFollowUpQuery += " ORDER BY lf.lead_hid DESC";
-    // Apply pagination if both page and perPage are provided 
+    // Apply pagination if both page and perPage are provided
     let total = 0;
     if (page && perPage) {
       const totalResult = await pool.query(countQuery);
@@ -948,21 +1124,32 @@ const getFollowUpLeadsReportList = async (req, res) => {
 
 //Today calls lead list...
 const getTodaysCallsLeadList = async (req, res) => {
-  const { page, perPage, key, lead_date, fromDate, today_date, lead_status_id ,follow_up_date} = req.query;
+  const {
+    page,
+    perPage,
+    key,
+    lead_date,
+    fromDate,
+    today_date,
+    lead_status_id,
+    follow_up_date,
+  } = req.query;
   const untitled_id = req.companyData.untitled_id;
   if (!today_date) {
-    return error422("Days is required.",res);
+    return error422("Days is required.", res);
   }
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
+    untitled_id,
+  ]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
   }
 
   try {
-      let getFollowUpQuery = ` SELECT lf.*, lh.category_id, lh.name, lh.category_id, lh.mobile_number, lh.customer_id, lh.untitled_id, lh.note, lh.lead_date, lh.city, c.category_name, e.name as employee_name, ls.lead_status FROM lead_footer lf 
+    let getFollowUpQuery = ` SELECT lf.*, lh.category_id, lh.name, lh.category_id, lh.mobile_number, lh.customer_id, lh.untitled_id, lh.note, lh.lead_date, lh.city, c.category_name, e.name as employee_name, ls.lead_status FROM lead_footer lf 
         LEFT JOIN lead_header lh
         ON lh.lead_hid = lf.lead_hid
         LEFT JOIN category c
@@ -977,11 +1164,18 @@ const getTodaysCallsLeadList = async (req, res) => {
     let countQuery = ` SELECT COUNT(*) AS total FROM lead_footer lf  
       LEFT JOIN lead_header lh
       ON lh.lead_hid = lf.lead_hid
-      WHERE (lh.customer_id = ${employeeDetails.customer_id}  AND lf.cts = '${today_date}')` ;
+      LEFT JOIN category c
+      ON c.category_id = lh.category_id
+      LEFT JOIN untitled u
+      ON u.untitled_id = lh.untitled_id
+      LEFT JOIN employee e
+      ON e.employee_id = u.employee_id
+      LEFT JOIN lead_status ls
+      ON ls.lead_status_id = lf.lead_status_id
+      WHERE (lh.customer_id = ${employeeDetails.customer_id}   AND DATE(lf.cts )= '${today_date}') ` ;
 
-   
     getFollowUpQuery += " ORDER BY lf.cts ASC";
-    // Apply pagination if both page and perPage are provided 
+    // Apply pagination if both page and perPage are provided
     let total = 0;
     if (page && perPage) {
       const totalResult = await pool.query(countQuery);
@@ -1025,5 +1219,5 @@ module.exports = {
   searchLeadHeaders,
   getPendingFollowUpLeadsList,
   getFollowUpLeadsReportList,
-  getTodaysCallsLeadList
+  getTodaysCallsLeadList,
 };
