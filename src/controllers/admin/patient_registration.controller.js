@@ -72,7 +72,7 @@ const addPatientRegistration = async (req, res) => {
     return error422("Source Of Patient ID is required.", res);
   } else if (!employee_id) {
     return error422("Employee Id is required.", res);
-  } else if (!amount) {
+  } else if ( (!amount) && (amount != 0)) {
     return error422("Amount is required.", res);
   } else if (!refered_by_id) {
     return error422("Refered By ID is required.", res);
