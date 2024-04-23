@@ -177,7 +177,17 @@ const addbill = async (req, res) => {
 
 // get bill list
 const getBillList = async (req, res) => {
-  const { page, perPage, key, Bill_date } = req.query;
+  const {
+    page,
+    perPage,
+    key,
+    fromDate,
+    toDate,
+    Bill_date,
+    service_id,
+    service_type_id,
+    entity_id,
+  } = req.query;
   const untitled_id = req.companyData.untitled_id;
   //check if untitled exists
   const isUntitledExistQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
@@ -231,7 +241,23 @@ const getBillList = async (req, res) => {
       getBillQuery += ` AND DATE(b.cts) = '${Bill_date}'`;
       countQuery += ` AND DATE(b.cts) = '${Bill_date}'`;
     }
-
+    // filter from date and to date
+    if (fromDate && toDate) {
+      getBillQuery += ` AND b.cts >= '${fromDate}' AND b.cts <= '${toDate}'`;
+      countQuery += ` AND b.cts >= '${fromDate}' AND b.cts <= '${toDate}'`;
+    }
+    if (service_id) {
+      getBillQuery += ` AND b.service_id = '${service_id}'`;
+      countQuery += ` AND b.service_id = '${service_id}'`;
+    }
+    if (service_type_id) {
+      getBillQuery += ` AND b.service_type_id = '${service_type_id}'`;
+      countQuery += ` AND b.service_type_id = '${service_type_id}'`;
+    }
+    if (entity_id) {
+      getBillQuery += ` AND p.entity_id = '${entity_id}'`;
+      countQuery += ` AND p.entity_id = '${entity_id}'`;
+    }
     // Apply pagination if both page and perPage are provided
     let total = 0;
     if (page && perPage) {
