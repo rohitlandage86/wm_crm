@@ -40,7 +40,7 @@ const createConsultation = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
     if (!mrno) {
         return error422("MRNO is required.", res);
-    }else if (!chief_complaints_id) {
+    } else if (!chief_complaints_id) {
         return error422("Cheif complaints is required")
     } else if (!untitled_id) {
         return error422("Untitled id is required.", res)
@@ -201,16 +201,17 @@ const createConsultation = async (req, res) => {
                 const dosages_id = row.dosages_id;
                 const days = row.days;
                 const instructions_id = row.instructions_id;
-
-                try {
-                    //insert  into consultation medicine table...
-                    const insertConsultationMedicineQuery = "INSERT INTO consultation_medicine (medicines_id, dosages_id, days, instructions_id, consultation_id ) VALUES (?, ?, ?, ?, ?)";
-                    const insertConsultationMedicineValues = [medicines_id, dosages_id, days, instructions_id, consultation_id];
-                    const insertConsultationMedicineResult = await connection.query(insertConsultationMedicineQuery, insertConsultationMedicineValues);
-                } catch (error) {
-                    // Handle errors
-                    await connection.rollback();
-                    return error500(error, res);
+                if (medicines_id) {
+                    try {
+                        //insert  into consultation medicine table...
+                        const insertConsultationMedicineQuery = "INSERT INTO consultation_medicine (medicines_id, dosages_id, days, instructions_id, consultation_id ) VALUES (?, ?, ?, ?, ?)";
+                        const insertConsultationMedicineValues = [medicines_id, dosages_id, days, instructions_id, consultation_id];
+                        const insertConsultationMedicineResult = await connection.query(insertConsultationMedicineQuery, insertConsultationMedicineValues);
+                    } catch (error) {
+                        // Handle errors
+                        await connection.rollback();
+                        return error500(error, res);
+                    }
                 }
             }
         }
@@ -224,29 +225,30 @@ const createConsultation = async (req, res) => {
                 const notes = row.notes;
                 let conFileName = "";
                 let conFilePath = "";
-                //  Generate short logo FileName and short logo FilePath if short provided
-                if (image_name && imageBase64) {
-                    const timestamp = Date.now();
-                    const fileExtension = path.extname(image_name);
-                    conFileName = `concultation_No${consultation_id}_${timestamp}${fileExtension}`;
-                    conFilePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", conFileName);
-                    const decodedLogo = Buffer.from(imageBase64, "base64");
-                    fs.writeFileSync(conFilePath, decodedLogo);
-                }
-                try {
-                    //insert  into consultation file upload table...
-                    const insertConsultationFileUploadQuery = "INSERT INTO consultation_file_upload ( image_name, notes, consultation_id ) VALUES (?, ?, ?)";
-                    const insertConsultationFileUploadValues = [conFileName, notes, consultation_id];
-                    const insertConsultationFileUploadResult = await connection.query(insertConsultationFileUploadQuery, insertConsultationFileUploadValues);
-
-                } catch (error) {
-                    // Handle errors
-                    console.log(error);
-                    await connection.rollback();
-                    if ((conFilePath && fs.existsSync(conFilePath))) {
-                        fs.unlinkSync(conFilePath);
+                if (image_name) {
+                    if (image_name && imageBase64) {
+                        const timestamp = Date.now();
+                        const fileExtension = path.extname(image_name);
+                        conFileName = `concultation_No${consultation_id}_${timestamp}${fileExtension}`;
+                        conFilePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", conFileName);
+                        const decodedLogo = Buffer.from(imageBase64, "base64");
+                        fs.writeFileSync(conFilePath, decodedLogo);
                     }
-                    return error500(error, res);
+                    try {
+                        //insert  into consultation file upload table...
+                        const insertConsultationFileUploadQuery = "INSERT INTO consultation_file_upload ( image_name, notes, consultation_id ) VALUES (?, ?, ?)";
+                        const insertConsultationFileUploadValues = [conFileName, notes, consultation_id];
+                        const insertConsultationFileUploadResult = await connection.query(insertConsultationFileUploadQuery, insertConsultationFileUploadValues);
+
+                    } catch (error) {
+                        // Handle errors
+                        console.log(error);
+                        await connection.rollback();
+                        if ((conFilePath && fs.existsSync(conFilePath))) {
+                            fs.unlinkSync(conFilePath);
+                        }
+                        return error500(error, res);
+                    }
                 }
             }
         }
@@ -323,7 +325,7 @@ const getConsultationList = async (req, res) => {
         if (current_day) {
             getConsultationQuery += ` AND DATE(c.cts) = '${current_day}'`;
             countQuery += ` AND DATE(c.cts) = '${current_day}'`;
-          }
+        }
 
         // Apply pagination if both page and perPage are provided
         let total = 0;
@@ -444,14 +446,14 @@ const getConsultationById = async (req, res) => {
 
                     if (imageBuffer) {
                         // Convert the image buffer to base64
-                    const imageBase64 = imageBuffer.toString('base64');
+                        const imageBase64 = imageBuffer.toString('base64');
 
-                    // Add the base64 image to the file upload object
-                    fileUpload.imageBase64 = imageBase64;
+                        // Add the base64 image to the file upload object
+                        fileUpload.imageBase64 = imageBase64;
                     }
                 }
             } catch (error) {
-                return error500(error,res)
+                return error500(error, res)
                 // Handle error if image cannot be read or converted
             }
         }
@@ -484,7 +486,7 @@ const updateConsultation = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
     if (!mrno) {
         return error422("MRNO is required.", res);
-    }else if (!chief_complaints_id) {
+    } else if (!chief_complaints_id) {
         return error422("Cheif complaints is required")
     } else if (!untitled_id) {
         return error422("Untitled id is required.", res)
@@ -683,28 +685,30 @@ const updateConsultation = async (req, res) => {
                 const instructions_id = row.instructions_id;
                 const consultation_medicine_id = row.consultation_medicine_id;
 
-                // Check if consultation medicine exists
-                const consultationMedicineQuery = "SELECT * FROM consultation_medicine WHERE consultation_medicine_id = ?";
-                const consultationMedicineResult = await connection.query(consultationMedicineQuery, [consultation_medicine_id]);
+                if (medicines_id) {
+                    // Check if consultation medicine exists
+                    const consultationMedicineQuery = "SELECT * FROM consultation_medicine WHERE consultation_medicine_id = ?";
+                    const consultationMedicineResult = await connection.query(consultationMedicineQuery, [consultation_medicine_id]);
 
-                if (consultationMedicineResult[0].length > 0) {
-                    try {
-                        // Update the consultation medicine record with new data
-                        const updateConsultationMedicineQuery = `
+                    if (consultationMedicineResult[0].length > 0) {
+                        try {
+                            // Update the consultation medicine record with new data
+                            const updateConsultationMedicineQuery = `
                                         UPDATE consultation_medicine
                                         SET  medicines_id = ?, dosages_id = ?, days = ?, instructions_id = ?, consultation_id = ?
                                         WHERE consultation_medicine_id = ?`;
-                        await connection.query(updateConsultationMedicineQuery, [medicines_id, dosages_id, days, instructions_id, consultationId, consultation_medicine_id]);
-                    } catch (error) {
-                        // Rollback the transaction
-                        await connection.rollback();
-                        return error500(error, res);
+                            await connection.query(updateConsultationMedicineQuery, [medicines_id, dosages_id, days, instructions_id, consultationId, consultation_medicine_id]);
+                        } catch (error) {
+                            // Rollback the transaction
+                            await connection.rollback();
+                            return error500(error, res);
+                        }
+                    } else {
+                        //insert  into consultation medicine table...
+                        const insertConsultationMedicineQuery = "INSERT INTO consultation_medicine (medicines_id, dosages_id, days, instructions_id, consultation_id ) VALUES (?, ?, ?, ?, ?)";
+                        const insertConsultationMedicineValues = [medicines_id, dosages_id, days, instructions_id, consultationId];
+                        const insertConsultationMedicineResult = await connection.query(insertConsultationMedicineQuery, insertConsultationMedicineValues);
                     }
-                } else {
-                    //insert  into consultation medicine table...
-                    const insertConsultationMedicineQuery = "INSERT INTO consultation_medicine (medicines_id, dosages_id, days, instructions_id, consultation_id ) VALUES (?, ?, ?, ?, ?)";
-                    const insertConsultationMedicineValues = [medicines_id, dosages_id, days, instructions_id, consultationId];
-                    const insertConsultationMedicineResult = await connection.query(insertConsultationMedicineQuery, insertConsultationMedicineValues);
                 }
             }
         }
@@ -720,49 +724,51 @@ const updateConsultation = async (req, res) => {
 
                 let conFileName = "";
                 let conFilePath = "";
-                //  Generate short logo FileName and short logo FilePath if short provided
-                if (image_name && imageBase64) {
-                    const timestamp = Date.now();
-                    const fileExtension = path.extname(image_name);
-                    conFileName = `concultation_No${consultationId}_${timestamp}${fileExtension}`;
-                    conFilePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", conFileName);
-                    const decodedLogo = Buffer.from(imageBase64, "base64");
-                    fs.writeFileSync(conFilePath, decodedLogo);
-                }
+                if (image_name) {
+                    //  Generate short logo FileName and short logo FilePath if short provided
+                    if (image_name && imageBase64) {
+                        const timestamp = Date.now();
+                        const fileExtension = path.extname(image_name);
+                        conFileName = `concultation_No${consultationId}_${timestamp}${fileExtension}`;
+                        conFilePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", conFileName);
+                        const decodedLogo = Buffer.from(imageBase64, "base64");
+                        fs.writeFileSync(conFilePath, decodedLogo);
+                    }
 
-                // Check if consultation file upload exists
-                const consultationFileUploadQuery = "SELECT * FROM consultation_file_upload WHERE consultation_file_upload_id = ?";
-                const consultationFileUploadResult = await connection.query(consultationFileUploadQuery, [consultation_file_upload_id]);
+                    // Check if consultation file upload exists
+                    const consultationFileUploadQuery = "SELECT * FROM consultation_file_upload WHERE consultation_file_upload_id = ?";
+                    const consultationFileUploadResult = await connection.query(consultationFileUploadQuery, [consultation_file_upload_id]);
 
-                if (consultationFileUploadResult[0].length > 0) {
-                    try {
-                        const previousImageName = consultationFileUploadResult[0][0].image_name;
-                        const previousImagePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", previousImageName);
+                    if (consultationFileUploadResult[0].length > 0) {
+                        try {
+                            const previousImageName = consultationFileUploadResult[0][0].image_name;
+                            const previousImagePath = path.join(__dirname, "..", "..", "..", "images", "consultationfile", previousImageName);
 
-                        // Update the consultation file upload  record with new data
-                        const updateConsultationFileUploadQuery = `
+                            // Update the consultation file upload  record with new data
+                            const updateConsultationFileUploadQuery = `
                                         UPDATE consultation_file_upload
                                         SET  image_name = ?, notes = ?, consultation_id = ?
                                         WHERE consultation_file_upload_id = ?`;
-                        await connection.query(updateConsultationFileUploadQuery, [conFileName, notes, consultationId, consultation_file_upload_id]);
+                            await connection.query(updateConsultationFileUploadQuery, [conFileName, notes, consultationId, consultation_file_upload_id]);
 
-                        // If the update is successful, delete the old file
-                        if (fs.existsSync(previousImagePath)) {
-                            fs.unlinkSync(previousImagePath);
+                            // If the update is successful, delete the old file
+                            if (fs.existsSync(previousImagePath)) {
+                                fs.unlinkSync(previousImagePath);
+                            }
+                        } catch (error) {
+                            // Rollback the transaction
+                            await connection.rollback();
+                            if ((conFilePath && fs.existsSync(conFilePath))) {
+                                fs.unlinkSync(conFilePath);
+                            }
+                            return error500(error, res);
                         }
-                    } catch (error) {
-                        // Rollback the transaction
-                        await connection.rollback();
-                        if ((conFilePath && fs.existsSync(conFilePath))) {
-                            fs.unlinkSync(conFilePath);
-                        }
-                        return error500(error, res);
+                    } else {
+                        //insert  into consultation file upload table...
+                        const insertConsultationFileUploadQuery = "INSERT INTO consultation_file_upload ( image_name, notes, consultation_id ) VALUES (?, ?, ?)";
+                        const insertConsultationFileUploadValues = [conFileName, notes, consultationId];
+                        const insertConsultationFileUploadResult = await connection.query(insertConsultationFileUploadQuery, insertConsultationFileUploadValues);
                     }
-                } else {
-                    //insert  into consultation file upload table...
-                    const insertConsultationFileUploadQuery = "INSERT INTO consultation_file_upload ( image_name, notes, consultation_id ) VALUES (?, ?, ?)";
-                    const insertConsultationFileUploadValues = [conFileName, notes, consultationId];
-                    const insertConsultationFileUploadResult = await connection.query(insertConsultationFileUploadQuery, insertConsultationFileUploadValues);
                 }
 
             }
@@ -1090,11 +1096,11 @@ const getAppointmentList = async (req, res) => {
         appointmentQuery += ` AND a.appointment_date >= '${fromDate}' AND a.appointment_date <= '${toDate}'`;
         countQuery += ` AND a.appointment_date >= '${fromDate}' AND a.appointment_date <= '${toDate}'`;
     }
-        // filter appointment date
-        if (appointment_date) {
-            appointmentQuery += ` AND a.appointment_date = '${appointment_date}'`;
-            countQuery += ` AND a.appointment_date = '${appointment_date}'`;
-        }
+    // filter appointment date
+    if (appointment_date) {
+        appointmentQuery += ` AND a.appointment_date = '${appointment_date}'`;
+        countQuery += ` AND a.appointment_date = '${appointment_date}'`;
+    }
     appointmentQuery += ` ORDER BY a.cts DESC`;
     try {
         // Apply pagination if both page and perPage are provided
@@ -1133,7 +1139,7 @@ const getAppointmentList = async (req, res) => {
 }
 //consultation diagnosis list for report 
 const getConsultationDiagnosisList = async (req, res) => {
-    const { page, perPage, key, fromDate, toDate, diagnosis_id,entity_id } = req.query;
+    const { page, perPage, key, fromDate, toDate, diagnosis_id, entity_id } = req.query;
 
     const untitled_id = req.companyData.untitled_id;
 
@@ -1190,7 +1196,7 @@ const getConsultationDiagnosisList = async (req, res) => {
     if (entity_id) {
         consultationDiagnosisQuery += ` AND p.entity_id = '${entity_id}'`;
         countQuery += ` AND p.entity_id = '${entity_id}'`;
-      }
+    }
 
     consultationDiagnosisQuery += ` ORDER BY c.cts DESC`;
     try {
@@ -1277,11 +1283,11 @@ const getConsultationTreatmentList = async (req, res) => {
         consultationTreatmentQuery += ` AND ct.treatment_id = ${treatment_id} `;
         countQuery += ` AND ct.treatment_id = ${treatment_id} `;
     }
-        //fitler entity id
-        if (entity_id) {
-            consultationTreatmentQuery += ` AND p.entity_id = '${entity_id}'`;
-            countQuery += ` AND p.entity_id = '${entity_id}'`;
-          }
+    //fitler entity id
+    if (entity_id) {
+        consultationTreatmentQuery += ` AND p.entity_id = '${entity_id}'`;
+        countQuery += ` AND p.entity_id = '${entity_id}'`;
+    }
     consultationTreatmentQuery += ` ORDER BY c.cts DESC`;
     try {
         // Apply pagination if both page and perPage are provided

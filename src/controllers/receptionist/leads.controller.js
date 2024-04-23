@@ -258,13 +258,16 @@ const getLeadsHeaderById = async (req, res) => {
   }
 
   try {
-    const leadheaderQuery = `SELECT * FROM lead_header WHERE lead_hid = ? AND customer_id = ?`;
+    const leadheaderQuery = `SELECT lh.*, c.category_name FROM lead_header lh 
+    LEFT JOIN category c
+    ON c.category_id = lh.category_id
+    WHERE lh.lead_hid = ? AND lh.customer_id = ?`;
     const leadheaderResult = await pool.query(leadheaderQuery, [
       leadheaderId,
       employeeDetails.customer_id,
     ]);
 
-    const leadfooterQuery = `SELECT lf.*, ls.lead_status FROM lead_footer lf LEFT JOIN lead_status ls ON ls.lead_status_id = lf.lead_status_id  WHERE lf.lead_hid = ?`;
+    const leadfooterQuery = `SELECT lf.*, ls.lead_status FROM lead_footer lf LEFT JOIN lead_status ls ON ls.lead_status_id = lf.lead_status_id  WHERE lf.lead_hid = ? ORDER BY lf.cts DESC`;
     const leadfooterResult = await pool.query(leadfooterQuery, [leadheaderId]);
 
     if (leadheaderResult[0].length === 0) {
