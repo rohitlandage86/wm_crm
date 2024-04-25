@@ -305,8 +305,6 @@ const updateLeads = async (req, res) => {
     return error422("Name is required.", res);
   } else if (!mobile_number) {
     return error422("Mobile Number is required.", res);
-  } else if (!note) {
-    return error422("Note is required.", res);
   } else if (!city) {
     return error422("City is required.", res);
   } else if (!untitled_id) {

@@ -243,14 +243,15 @@ const  createCustomer = async (req, res) => {
           if ((longLogoFilePath && fs.existsSync(longLogoFilePath)) ||(shortLogoFilePath && fs.existsSync(shortLogoFilePath)) ) {
             fs.unlinkSync(longLogoFilePath);
             fs.unlinkSync(shortLogoFilePath);
-          }
+          } // Handle errors
+          await connection.rollback();
           return error422("Customer Id And Module Id is already exists.", res);
         }
 
         try {
           //insert  into customer modules  table...
           const insertCustomerModulesQuery = "INSERT INTO wm_customer_modules (customer_id, module_id,untitled_id) VALUES (?, ?,?)";
-          const insertCustomerModulesValues = [customer_id, module_id, customer_untitled_id,];
+          const insertCustomerModulesValues = [customer_id, module_id, customer_untitled_id];
           const insertCustomerModulesResult = await connection.query(insertCustomerModulesQuery, insertCustomerModulesValues);
 
         } catch (error) {
