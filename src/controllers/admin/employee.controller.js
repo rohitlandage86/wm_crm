@@ -68,7 +68,7 @@ const addEmployee = async (req, res) => {
 
   //check if designation is doctor
   if (designationResult[0][0].designation_name.toLowerCase().trim()=='doctor') {
-   if (!charges) {
+   if ((!charges) && (charges != 0)) {
     return error422("Charges is required", res);
    }
   } else {
@@ -268,7 +268,7 @@ const updateEmployee = async (req, res) => {
     }
       //check if designation is doctor
   if (isDesignationExistsResult[0][0].designation_name.toLowerCase().trim()=='doctor') {
-    if (!charges) {
+    if ((!charges) && (charges != 0)) {
      return error422("Charges is required", res);
     }
    } else {

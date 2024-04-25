@@ -28,19 +28,13 @@ error500 = (error, res) => {
 const addbill = async (req, res) => {
   const mrno = req.body.mrno ? req.body.mrno : "";
   const entity_id = req.body.entity_id ? req.body.entity_id : "";
-  const service_type_id = req.body.service_type_id
-    ? req.body.service_type_id
-    : "";
+  const service_type_id = req.body.service_type_id ? req.body.service_type_id : "";
   const service_id = req.body.service_id ? req.body.service_id : "";
-  const bill_amount = req.body.bill_amount ? req.body.bill_amount : "";
-  const discount_amount = req.body.discount_amount
-    ? req.body.discount_amount
-    : "";
-  const total_amount = req.body.total_amount ? req.body.total_amount : "";
+  const bill_amount = req.body.bill_amount ? req.body.bill_amount : 0;
+  const discount_amount = req.body.discount_amount ? req.body.discount_amount : 0;
+  const total_amount = req.body.total_amount ? req.body.total_amount : 0;
   const payment_type = req.body.payment_type ? req.body.payment_type : "";
-  const payment_historyDetails = req.body.payment_historyDetails
-    ? req.body.payment_historyDetails
-    : "";
+  const payment_historyDetails = req.body.payment_historyDetails ? req.body.payment_historyDetails : "";
   const untitled_id = req.companyData.untitled_id;
   if (!mrno) {
     return error422("MRNO is required.", res);
@@ -62,29 +56,17 @@ const addbill = async (req, res) => {
 
   // if lead Footer Details
   if (payment_historyDetails) {
-    if (
-      !payment_historyDetails ||
-      !Array.isArray(payment_historyDetails) ||
-      payment_historyDetails.length === 0
-    ) {
-      return error422(
-        "No Payment history Details provided or invalid payment history Details data.",
-        res
-      );
+    if (!payment_historyDetails || !Array.isArray(payment_historyDetails) || payment_historyDetails.length === 0) {
+      return error422("No Payment history Details provided or invalid payment history Details data.", res);
     }
 
     if (payment_historyDetails.length != 1) {
-      return error422(
-        "No payment history Details provided or invalid payment history Details data.",
-        res
-      );
+      return error422("No payment history Details provided or invalid payment history Details data.", res);
     }
   }
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const untitledExistResult = await pool.query(isUntitledExistsQuery, [
-    untitled_id,
-  ]);
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
   if (untitledExistResult[0].length == 0) {
     return error422("User Not Found.", res);
   }
@@ -110,9 +92,7 @@ const addbill = async (req, res) => {
   //check if check service type exists
   const isExistServicetypeQuery =
     "SELECT * FROM service_type WHERE service_type_id = ?";
-  const servicetypeResult = await pool.query(isExistServicetypeQuery, [
-    service_type_id,
-  ]);
+  const servicetypeResult = await pool.query(isExistServicetypeQuery, [service_type_id]);
   if (servicetypeResult[0].length == 0) {
     return error422("Service type Not Found", res);
   }
@@ -132,36 +112,12 @@ const addbill = async (req, res) => {
     await connection.beginTransaction();
 
     //Insert bill table
-    const insertBillQuery =
-      "INSERT INTO bill ( mrno, entity_id, service_type_id, service_id, bill_amount, discount_amount, total_amount, customer_id, payment_type, untitled_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    const billValues = [
-      mrno,
-      entity_id,
-      service_type_id,
-      service_id,
-      bill_amount,
-      discount_amount,
-      total_amount,
-      customer_id,
-      payment_type,
-      untitled_id,
-    ];
+    const insertBillQuery = "INSERT INTO bill ( mrno, entity_id, service_type_id, service_id, bill_amount, discount_amount, total_amount, customer_id, payment_type, untitled_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    const billValues = [mrno, entity_id, service_type_id, service_id, bill_amount, discount_amount, total_amount, customer_id, payment_type, untitled_id,];
     const billResult = await connection.query(insertBillQuery, billValues);
-    const insertPaymentHistoryQuery =
-      "INSERT INTO payment_history (payment_type, mrno, amount, entity_id, service_type_id,service_id,untitled_id) VALUES (?, ?, ?,?,?,?,?)";
-    const insertpaymentHistoryValues = [
-      payment_type,
-      mrno,
-      bill_amount,
-      entity_id,
-      service_type_id,
-      service_id,
-      untitled_id,
-    ];
-    const paymenthistoryResult = await connection.query(
-      insertPaymentHistoryQuery,
-      insertpaymentHistoryValues
-    );
+    const insertPaymentHistoryQuery = "INSERT INTO payment_history (payment_type, mrno, amount, entity_id, service_type_id,service_id,untitled_id) VALUES (?, ?, ?,?,?,?,?)";
+    const insertpaymentHistoryValues = [payment_type, mrno, bill_amount, entity_id, service_type_id, service_id, untitled_id,];
+    const paymenthistoryResult = await connection.query(insertPaymentHistoryQuery, insertpaymentHistoryValues);
 
     // Commit the transaction
     await connection.commit();
