@@ -31,16 +31,16 @@ const addPatientRegistration = async (req, res) => {
   const mrno_entity_series = req.body.mrno_entity_series ? req.body.mrno_entity_series.trim() : "";
   const patient_name = req.body.patient_name ? req.body.patient_name.trim() : "";
   const gender = req.body.gender ? req.body.gender.trim() : "";
-  const age = req.body.age ? req.body.age : "";
+  const age = req.body.age ? req.body.age : 0;
   const mobile_no = req.body.mobile_no ? req.body.mobile_no : "";
   const address = req.body.address ? req.body.address.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
   const state_id = req.body.state_id ? req.body.state_id : "";
   const source_of_patient_id = req.body.source_of_patient_id ? req.body.source_of_patient_id : "";
   const employee_id = req.body.employee_id ? req.body.employee_id : "";
-  const height = req.body.height ? req.body.height : "";
-  const weight = req.body.weight ? req.body.weight : "";
-  const bmi = req.body.bmi ? req.body.bmi.trim() : "";
+  const height = req.body.height ? req.body.height : 0;
+  const weight = req.body.weight ? req.body.weight : 0;
+  const bmi = req.body.bmi ? req.body.bmi : 0;
   const amount = req.body.amount ? req.body.amount : 0;
   const refered_by_id = req.body.refered_by_id ? req.body.refered_by_id : "";
   const payment_type = req.body.payment_type ? req.body.payment_type : '';
@@ -62,8 +62,6 @@ const addPatientRegistration = async (req, res) => {
     return error422("Age is required.", res);
   } else if (!mobile_no) {
     return error422("Mobile No is required.", res);
-  } else if (!address) {
-    return error422("Address is required.", res);
   } else if (!city) {
     return error422("City is required.", res);
   } else if (!state_id) {
@@ -81,7 +79,7 @@ const addPatientRegistration = async (req, res) => {
   } else if (!untitled_id) {
     return error422("Untitled ID is required.", res);
   }
-  //Check if untitled exists
+  //Check if untitled  
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
   const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
   if (untitledExistResult[0].length == 0) {
@@ -310,15 +308,15 @@ const updatePatientRegistration = async (req, res) => {
   const mrno_entity_series = req.body.mrno_entity_series ? req.body.mrno_entity_series.trim() : "";
   const patient_name = req.body.patient_name ? req.body.patient_name.trim() : "";
   const gender = req.body.gender ? req.body.gender.trim() : "";
-  const age = req.body.age ? req.body.age : "";
+  const age = req.body.age ? req.body.age : 0;
   const mobile_no = req.body.mobile_no ? req.body.mobile_no : "";
   const address = req.body.address ? req.body.address.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
   const state_id = req.body.state_id ? req.body.state_id : "";
   const source_of_patient_id = req.body.source_of_patient_id ? req.body.source_of_patient_id : "";
-  const height = req.body.height ? req.body.height : "";
-  const weight = req.body.weight ? req.body.weight : "";
-  const bmi = req.body.bmi ? req.body.bmi.trim() : "";
+  const height = req.body.height ? req.body.height : 0;
+  const weight = req.body.weight ? req.body.weight : 0;
+  const bmi = req.body.bmi ? req.body.bmi : 0;
   const refered_by_id = req.body.refered_by_id ? req.body.refered_by_id : "";
   const employee_id = req.body.employee_id ? req.body.employee_id : "";
   const untitled_id = req.companyData.untitled_id;
@@ -339,8 +337,6 @@ const updatePatientRegistration = async (req, res) => {
     return error422("Age is required.", res);
   } else if (!mobile_no) {
     return error422("Mobile No is required.", res);
-  } else if (!address) {
-    return error422("Address is required.", res);
   } else if (!city) {
     return error422("City is required.", res);
   } else if (!state_id) {
@@ -349,12 +345,6 @@ const updatePatientRegistration = async (req, res) => {
     return error422("Source Of Patient ID is required.", res);
   } else if (!employee_id) {
     return error422("Employee Id is required.", res);
-  } else if (!height) {
-    return error422("Hight is required.", res);
-  } else if (!weight) {
-    return error422("Weight is required.", res);
-  } else if (!bmi) {
-    return error422("BMI is required.", res);
   } else if (!refered_by_id) {
     return error422("Refered By ID is required.", res);
   } else if (!untitled_id) {

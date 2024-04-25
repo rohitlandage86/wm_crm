@@ -27,10 +27,11 @@ error500 = (error, res) => {
 };
 const createConsultation = async (req, res) => {
     const mrno = req.body.mrno ? req.body.mrno : '';
-    const pluse = req.body.pluse ? req.body.pluse : '';
-    const bp = req.body.bp ? req.body.bp : '';
+    const pluse = req.body.pluse ? req.body.pluse : 0;
+    const bp = req.body.bp ? req.body.bp : 0;
     const past_history = req.body.past_history ? req.body.past_history : '';
     const chief_complaints_id = req.body.chief_complaints_id ? req.body.chief_complaints_id : '';
+    const consultationChiefComplaintsDetails = req.body.consultationChiefComplaintsDetails ? req.body.consultationChiefComplaintsDetails : "";
     const consultationDiagnosisDetails = req.body.consultationDiagnosisDetails ? req.body.consultationDiagnosisDetails : "";
     const consultationTreatmentDetails = req.body.consultationTreatmentDetails ? req.body.consultationTreatmentDetails : "";
     const consultationMedicineDetails = req.body.consultationMedicineDetails ? req.body.consultationMedicineDetails : "";
@@ -40,9 +41,11 @@ const createConsultation = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
     if (!mrno) {
         return error422("MRNO is required.", res);
-    } else if (!chief_complaints_id) {
-        return error422("Cheif complaints is required")
-    } else if (!untitled_id) {
+    }
+    // else if (!chief_complaints_id) {
+    //     return error422("Cheif complaints is required")
+    // } 
+    else if (!untitled_id) {
         return error422("Untitled id is required.", res)
     }
     //Check if untitled exists
@@ -100,6 +103,26 @@ const createConsultation = async (req, res) => {
 
         if (duplicates.length > 0) {
             return error422("Duplicate Consultation treatment advice found in Consultation treatment Details array.", res);
+        }
+    }
+
+    // if  consultation chief complaint details
+    if (consultationChiefComplaintsDetails) {
+        if (!consultationChiefComplaintsDetails || !Array.isArray(consultationChiefComplaintsDetails)) {
+            return error422("invalid consultation Chief Complaints Details data.", res);
+        }
+        //check duplicate chief complaint id 
+        const duplicates = consultationChiefComplaintsDetails.reduce((acc, consultation_chief_complaint, index) => {
+            const { chief_complaints_id } = consultation_chief_complaint;
+            const foundIndex = consultationChiefComplaintsDetails.findIndex((c, i) => i !== index && c.chief_complaints_id === chief_complaints_id);
+            if (foundIndex !== -1 && !acc.some((entry) => entry.index === foundIndex)) {
+                acc.push({ index, foundIndex });
+            }
+            return acc;
+        }, []);
+
+        if (duplicates.length > 0) {
+            return error422("Duplicate Consultation Chief complaint found in Consultation Chief Complaints Details array.", res);
         }
     }
 
@@ -190,6 +213,25 @@ const createConsultation = async (req, res) => {
                     // Handle errors
                     await connection.rollback();
                     return error500(error, res);
+                }
+            }
+        }
+
+        //consultation Chief Complaints details 
+        if (consultationChiefComplaintsDetails) {
+            for (const row of consultationChiefComplaintsDetails) {
+                const chief_complaints_id = row.chief_complaints_id;
+                if (chief_complaints_id) {
+                    try {
+                        //insert  into consultation cheif complaints table...
+                        const insertConsultationChiefComplaintsQuery = "INSERT INTO consultation_chief_complaints (chief_complaints_id, consultation_id ) VALUES (?, ?)";
+                        const insertConsultationChiefComplaintsValues = [chief_complaints_id, consultation_id];
+                        const insertConsultationChiefComplaintsResult = await connection.query(insertConsultationChiefComplaintsQuery, insertConsultationChiefComplaintsValues);
+                    } catch (error) {
+                        // Handle errors
+                        await connection.rollback();
+                        return error500(error, res);
+                    }
                 }
             }
         }
@@ -391,21 +433,23 @@ const getConsultationById = async (req, res) => {
         const result = await pool.query(getConsultationQuery);
         let consultations = result[0][0];
 
+        //query consultation chief complaints 
+        const consultationChiefComplaintsQuery = `SELECT * FROM  consultation_chief_complaints WHERE consultation_id = ${consultationId}`;
+        const consultationChiefComplaintsResult = await pool.query(consultationChiefComplaintsQuery);
+        consultations['consultationChiefComplaintsDetails'] = consultationChiefComplaintsResult[0];
+
         //query consultation diagnosis 
-        const consultationDiagnosisDetails = [];
         const consultationDiagnosisQuery = `SELECT * FROM  consultation_diagnosis WHERE consultation_id = ${consultationId}`;
         const consultationDiagnosisResult = await pool.query(consultationDiagnosisQuery);
         consultations['consultationDiagnosisDetails'] = consultationDiagnosisResult[0];
 
         //query consultation  treatment 
-        const consultationTreatmentDetails = [];
         const consultationTreatmentQuery = `SELECT * FROM consultation_treatment_advice  WHERE consultation_id = ${consultationId}`;
         const consultationTreatmentResult = await pool.query(consultationTreatmentQuery);
         consultations['consultationTreatmentDetails'] = consultationTreatmentResult[0];
 
 
         // query consultation medicine 
-        const consultationMedicineDetails = [];
         const consultationMedicineQuery = `SELECT * FROM consultation_medicine   WHERE consultation_id = ${consultationId}`;
         const consultationMedicineResult = await pool.query(consultationMedicineQuery);
         consultations['consultationMedicineDetails'] = consultationMedicineResult[0];
@@ -432,7 +476,6 @@ const getConsultationById = async (req, res) => {
         //     console.log(error);
         // }
         //query consultation file upload 
-        const consultationFileUploadDetails = [];
         const consultationFileUploadQuery = `SELECT * FROM consultation_file_upload WHERE consultation_id = ${consultationId}`;
         const consultationFileUploadResult = await pool.query(consultationFileUploadQuery);
         consultations['consultationFileUploadDetails'] = consultationFileUploadResult[0];
@@ -475,10 +518,11 @@ const getConsultationById = async (req, res) => {
 const updateConsultation = async (req, res) => {
     const consultationId = parseInt(req.params.id);
     const mrno = req.body.mrno ? req.body.mrno : '';
-    const pluse = req.body.pluse ? req.body.pluse : '';
-    const bp = req.body.bp ? req.body.bp : '';
+    const pluse = req.body.pluse ? req.body.pluse : 0;
+    const bp = req.body.bp ? req.body.bp : 0;
     const past_history = req.body.past_history ? req.body.past_history : '';
     const chief_complaints_id = req.body.chief_complaints_id ? req.body.chief_complaints_id : '';
+    const consultationChiefComplaintsDetails = req.body.consultationChiefComplaintsDetails ? req.body.consultationChiefComplaintsDetails : "";
     const consultationDiagnosisDetails = req.body.consultationDiagnosisDetails ? req.body.consultationDiagnosisDetails : "";
     const consultationTreatmentDetails = req.body.consultationTreatmentDetails ? req.body.consultationTreatmentDetails : "";
     const consultationMedicineDetails = req.body.consultationMedicineDetails ? req.body.consultationMedicineDetails : "";
@@ -486,8 +530,6 @@ const updateConsultation = async (req, res) => {
     const untitled_id = req.companyData.untitled_id;
     if (!mrno) {
         return error422("MRNO is required.", res);
-    } else if (!chief_complaints_id) {
-        return error422("Cheif complaints is required")
     } else if (!untitled_id) {
         return error422("Untitled id is required.", res)
     }
@@ -551,6 +593,26 @@ const updateConsultation = async (req, res) => {
 
         if (duplicates.length > 0) {
             return error422("Duplicate Consultation treatment advice found in Consultation treatment Details array.", res);
+        }
+    }
+
+    // if  consultation chief complaint details
+    if (consultationChiefComplaintsDetails) {
+        if (!consultationChiefComplaintsDetails || !Array.isArray(consultationChiefComplaintsDetails)) {
+            return error422("invalid consultation Chief Complaints Details data.", res);
+        }
+        //check duplicate chief complaint id 
+        const duplicates = consultationChiefComplaintsDetails.reduce((acc, consultation_chief_complaint, index) => {
+            const { chief_complaints_id } = consultation_chief_complaint;
+            const foundIndex = consultationChiefComplaintsDetails.findIndex((c, i) => i !== index && c.chief_complaints_id === chief_complaints_id);
+            if (foundIndex !== -1 && !acc.some((entry) => entry.index === foundIndex)) {
+                acc.push({ index, foundIndex });
+            }
+            return acc;
+        }, []);
+
+        if (duplicates.length > 0) {
+            return error422("Duplicate Consultation Chief complaint found in Consultation Chief Complaints Details array.", res);
         }
     }
 
@@ -675,7 +737,39 @@ const updateConsultation = async (req, res) => {
                 }
             }
         }
+        //consultation chief complaints details 
+        if (consultationChiefComplaintsDetails) {
+            for (const row of consultationChiefComplaintsDetails) {
+                const chief_complaints_id = row.chief_complaints_id;
+                const consultation_chief_complaints_id = row.consultation_chief_complaints_id;
 
+                if (chief_complaints_id) {
+                    // Check if consultation chief complaints exists
+                    const consultationChiefComplaintsQuery = "SELECT * FROM consultation_chief_complaints WHERE consultation_chief_complaints_id = ?";
+                    const consultationChiefComplaintsResult = await connection.query(consultationChiefComplaintsQuery, [consultation_chief_complaints_id]);
+
+                    if (consultationChiefComplaintsResult[0].length > 0) {
+                        try {
+                            // Update the consultation chief complaints record with new data
+                            const updateConsultationChiefComplaintsQuery = `
+                                        UPDATE consultation_chief_complaints
+                                        SET  chief_complaints_id = ?, consultation_id = ?
+                                        WHERE consultation_chief_complaints_id = ?`;
+                            await connection.query(updateConsultationChiefComplaintsQuery, [chief_complaints_id, consultationId, consultation_chief_complaints_id]);
+                        } catch (error) {
+                            // Rollback the transaction
+                            await connection.rollback();
+                            return error500(error, res);
+                        }
+                    } else {
+                        //insert  into consultation chief complaints table...
+                        const insertConsultationChiefComplaintsQuery = "INSERT INTO consultation_chief_complaints (chief_complaints_id, consultation_id ) VALUES (?, ?)";
+                        const insertConsultationChiefComplaintsValues = [chief_complaints_id, consultationId];
+                        const insertConsultationChiefComplaintsResult = await connection.query(insertConsultationChiefComplaintsQuery, insertConsultationChiefComplaintsValues);
+                    }
+                }
+            }
+        }
         //consultation Medicice details 
         if (consultationMedicineDetails) {
             for (const row of consultationMedicineDetails) {
@@ -853,6 +947,43 @@ const deleteConsultationTreatment = async (req, res) => {
         return res.json({
             status: 200,
             message: "Consulation Treatment has been deleted successfully.",
+        });
+    } catch (error) {
+        await connection.rollback();
+        return error500(error, res);
+    }
+};
+//delete consultation chief complaints
+const deleteConsultationChiefComplaints = async (req, res) => {
+    const consultationChiefComplaintsId = parseInt(req.params.id);
+    const { consultation_id } = req.query;
+
+    if (!consultation_id) {
+        return error422("Consultation id is required.", res);
+    }
+
+    const isConsultationChiefComplaintsQuery = "SELECT * FROM consultation_chief_complaints WHERE consultation_chief_complaints_id = ? AND consultation_id = ?";
+    const consultationChiefComplaintsResult = await pool.query(isConsultationChiefComplaintsQuery, [consultationChiefComplaintsId, consultation_id]);
+    if (consultationChiefComplaintsResult[0].length == 0) {
+        return res.status(404).json({
+            status: 404,
+            message: "Consultation Chief Complaints Not Found.",
+        });
+    }
+    // Attempt to obtain a database connection
+    let connection = await getConnection();
+
+    try {
+        // Start a transaction
+        await connection.beginTransaction();
+        //delete consultation chief complaints
+        const deleteConsultationChiefComplaintsQuery = "DELETE FROM consultation_chief_complaints WHERE consultation_chief_complaints_id = ?";
+        const deleteConsulationChiefComplaintsResult = await connection.query(deleteConsultationChiefComplaintsQuery, [consultationChiefComplaintsId]);
+
+        await connection.commit();
+        return res.json({
+            status: 200,
+            message: "Consulation Chief Complaints has been deleted successfully.",
         });
     } catch (error) {
         await connection.rollback();
@@ -1333,6 +1464,7 @@ module.exports = {
     deleteConsultationTreatment,
     deleteConsultationMedicine,
     deleteConsultationFileUpload,
+    deleteConsultationChiefComplaints,
     getConsulationsByMrno,
     getAppointmentList,
     getConsultationDiagnosisList,

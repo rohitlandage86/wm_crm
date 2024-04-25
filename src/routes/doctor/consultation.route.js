@@ -15,6 +15,7 @@ router.put('/:id',checkAuth,consultationController.updateConsultation);
 // router.patch('/:id',checkAuth,consultationController.onStatusChange);
 router.delete('/diagnosis/:id',checkAuth,consultationController.deleteConsultationDiagnosis);
 router.delete('/treatment/:id',checkAuth,consultationController.deleteConsultationTreatment);
+router.delete('/chief_complaints/:id',checkAuth,consultationController.deleteConsultationChiefComplaints);
 router.delete('/medicine/:id',checkAuth,consultationController.deleteConsultationMedicine);
 router.delete('/fileUpload/:id',checkAuth,consultationController.deleteConsultationFileUpload);
 module.exports = router 
