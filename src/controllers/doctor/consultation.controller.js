@@ -1134,6 +1134,18 @@ const getConsulationsByMrno = async (req, res) => {
             let consultationTreatmentResult = await pool.query(consultationTreatmentQuery);
             consultations[index]['consultationTreatmentDetails'] = consultationTreatmentResult[0];
         }
+        //consultatin chief complaints details
+        for (let index = 0; index < consultations.length; index++) {
+            const element = consultations[index];
+            let consultationChiefComplaintsQuery = `
+                SELECT cc.*, c.chief_complaint
+                FROM consultation_chief_complaints cc
+                LEFT JOIN chief_complaints c 
+                ON c.chief_complaint_id = cc.chief_complaints_id  
+                WHERE cc.consultation_id = ${element.consultation_id}`;
+            let consultationChiefComplaintsResult = await pool.query(consultationChiefComplaintsQuery);
+            consultations[index]['consultationChiefComplaintsDetails'] = consultationChiefComplaintsResult[0];
+        }
         //consultatin medicine details
         for (let index = 0; index < consultations.length; index++) {
             const element = consultations[index];
