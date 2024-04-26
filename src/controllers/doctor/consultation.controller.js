@@ -341,14 +341,14 @@ const getConsultationList = async (req, res) => {
         ON p.mrno = c.mrno
         LEFT JOIN entity e
         ON e.entity_id = p.entity_id
-        WHERE c.untitled_id = ${untitled_id}`;
+        WHERE c.customer_id = ${customer_id}`;
 
         let countQuery = `SELECT COUNT(*) AS total FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno 
         LEFT JOIN entity e
         ON e.entity_id = p.entity_id
-        WHERE c.untitled_id = ${untitled_id}`;
+        WHERE c.customer_id = ${customer_id}`;
 
         if (key) {
             const lowercaseKey = key.toLowerCase().trim().replace(/'/g, "\\'");;
