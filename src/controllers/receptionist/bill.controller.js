@@ -34,7 +34,6 @@ const addbill = async (req, res) => {
   const discount_amount = req.body.discount_amount ? req.body.discount_amount : 0;
   const total_amount = req.body.total_amount ? req.body.total_amount : 0;
   const payment_type = req.body.payment_type ? req.body.payment_type : "";
-  const payment_historyDetails = req.body.payment_historyDetails ? req.body.payment_historyDetails : "";
   const untitled_id = req.companyData.untitled_id;
   if (!mrno) {
     return error422("MRNO is required.", res);
@@ -54,16 +53,7 @@ const addbill = async (req, res) => {
     return error422("Untitled id is required.", res);
   }
 
-  // if lead Footer Details
-  if (payment_historyDetails) {
-    if (!payment_historyDetails || !Array.isArray(payment_historyDetails) || payment_historyDetails.length === 0) {
-      return error422("No Payment history Details provided or invalid payment history Details data.", res);
-    }
 
-    if (payment_historyDetails.length != 1) {
-      return error422("No payment history Details provided or invalid payment history Details data.", res);
-    }
-  }
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
   const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
@@ -81,7 +71,7 @@ const addbill = async (req, res) => {
   if (mrnoResult[0].length == 0) {
     return error422("Mrno Not Found", res);
   }
-
+ 
   //check if check entity exists
   const isExistEntityQuery = "SELECT * FROM entity WHERE entity_id = ?";
   const entityResult = await pool.query(isExistEntityQuery, [entity_id]);

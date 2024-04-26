@@ -70,7 +70,7 @@ const addPatientRegistration = async (req, res) => {
     return error422("Source Of Patient ID is required.", res);
   } else if (!employee_id) {
     return error422("Employee Id is required.", res);
-  } else if ( (!amount) && (amount != 0)) {
+  } else if ((!amount) && (amount != 0)) {
     return error422("Amount is required.", res);
   } else if (!refered_by_id) {
     return error422("Refered By ID is required.", res);
@@ -125,7 +125,7 @@ const addPatientRegistration = async (req, res) => {
               UPDATE lead_footer
               SET  isFollowUp = ?
               WHERE lead_hid = ?`;
-            await connection.query(updateLeadFooterQuery, [1, isExistLeadHeaderResult[0][0].lead_hid]);
+      await connection.query(updateLeadFooterQuery, [1, isExistLeadHeaderResult[0][0].lead_hid]);
       //insert  into lead footer  table...
       const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls,lead_status_id, isFollowUp) VALUES (?, ?, ?, ?, ?, ?, ?)";
       const insertLeadFooterValues = [isExistLeadHeaderResult[0][0].lead_hid, "PATIENT REGISTRATION", registration_date, '', '', 2, 1];
@@ -608,6 +608,22 @@ const patientRevisit = async (req, res) => {
   const visit_type = req.body.visit_type;
   if (!visit_type || visit_type != 'RE_VISIT') {
     return error422("Patient Visit Type is required.", res);
+  } else if (!mrno) {
+    return error422("Patient MRNO is required.", res);
+  }
+
+  //check if check mrno exists
+  const isExistMrnoQuery = "SELECT * FROM patient_registration WHERE mrno = ?";
+  const mrnoResult = await pool.query(isExistMrnoQuery, [mrno]);
+  if (mrnoResult[0].length == 0) {
+    return error422("MRNO Not Found", res);
+  }
+  //get payment history...
+  const paymentHistoryQuery = "SELECT * FROM payment_history WHERE mrno = ?";
+  const paymentHistoryResult = await pool.query(paymentHistoryQuery,[mrno]);
+
+   if (paymentHistoryResult[0].length == 0) {
+    return error422("Payment history Not Found.", res);
   }
   const nowDate = new Date().toISOString().split("T")[0];
 
@@ -617,8 +633,13 @@ const patientRevisit = async (req, res) => {
   // const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
   // const customerResult = await pool.query(isCustomerQuery);
   // const untitledId =  customerResult[0][0].untitled_id;
-  
+  if (mrnoResult[0][0].registration_date) {
+     return error422("True",res);
+  }else{
+    return error422("false",res);
+  }
   try {
+   
     //insert into patient_visit_list 
     const insertPatientVisitListQuery = 'INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)';
     const insertPatientVisitListValues = [mrno, 'RE_VISIT', nowDate];
