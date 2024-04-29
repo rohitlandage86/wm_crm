@@ -7,7 +7,6 @@ const pool = mysql.createPool({
     user:'root',
     password:'',
     database:'wm_crm',
-    connectionLimit:10,
     timezone: '+00:00',  // Set the time zone for the connectio
 });
 

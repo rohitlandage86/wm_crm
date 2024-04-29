@@ -691,14 +691,15 @@ const getFollowUpLeadsList = async (req, res) => {
 };
 const updateFollowUpLead = async (req, res) => {
   const leadId = parseInt(req.params.id);
-  const leadFooterDetails = req.body.leadFooterDetails
-    ? req.body.leadFooterDetails
-    : "";
+  const category_id = req.body.category_id ? req.body.category_id : "";
+  const leadFooterDetails = req.body.leadFooterDetails ? req.body.leadFooterDetails : "";
   const untitled_id = req.companyData.untitled_id;
   if (!untitled_id) {
     return error422("Untitled ID is required.", res);
   } else if (!leadId) {
     return error422("Lead Header Id is required", res);
+  } else if (!category_id) {
+    return error422("Category is required.", res);
   }
 
   // Check if lead exists
@@ -710,43 +711,26 @@ const updateFollowUpLead = async (req, res) => {
 
   // if lead Footer details
   if (leadFooterDetails) {
-    if (
-      !leadFooterDetails ||
-      !Array.isArray(leadFooterDetails) ||
-      leadFooterDetails.length === 0
-    ) {
-      return error422(
-        "No Leads  details provided or invalid Lead  Details data.",
-        res
-      );
+    if (!leadFooterDetails || !Array.isArray(leadFooterDetails) || leadFooterDetails.length === 0) {
+      return error422("No Leads  details provided or invalid Lead  Details data.", res);
     }
     //check duplicate lead_footer id
     const duplicates = leadFooterDetails.reduce((acc, lead_footer, index) => {
       const { lead_fid } = lead_footer;
-      const foundIndex = leadFooterDetails.findIndex(
-        (l, i) => i !== index && l.lead_fid === lead_fid
-      );
-      if (
-        foundIndex !== -1 &&
-        !acc.some((entry) => entry.index === foundIndex)
-      ) {
+      const foundIndex = leadFooterDetails.findIndex((l, i) => i !== index && l.lead_fid === lead_fid);
+      if (foundIndex !== -1 && !acc.some((entry) => entry.index === foundIndex)) {
         acc.push({ index, foundIndex });
       }
       return acc;
     }, []);
 
     if (duplicates.length > 0) {
-      return error422(
-        "Duplicate lead footer found in lead footer Details array.",
-        res
-      );
+      return error422("Duplicate lead footer found in lead footer Details array.", res);
     }
   }
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [
-    untitled_id,
-  ]);
+  const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
   const employeeDetails = isExistUntitledIdResult[0][0];
   if (employeeDetails.customer_id == 0) {
     return error422("Customer Not Found.", res);
@@ -758,8 +742,15 @@ const updateFollowUpLead = async (req, res) => {
   try {
     // Start a transaction
     await connection.beginTransaction();
-    const nowDate = new Date().toISOString().split("T")[0];
 
+    //lead header update 
+    const updateQuery = `
+    UPDATE lead_header
+    SET category_id = ? 
+    WHERE lead_hid = ? `;
+    await connection.query(updateQuery, [category_id,leadId]);
+
+    //lead footer update as a follow up
     if (leadFooterDetails) {
       for (const row of leadFooterDetails) {
         const lead_fid = row.lead_fid;
@@ -771,9 +762,7 @@ const updateFollowUpLead = async (req, res) => {
 
         // Check if lead footer exists
         const leadfooterQuery = "SELECT * FROM lead_footer WHERE lead_fid = ?";
-        const leadfooterResult = await connection.query(leadfooterQuery, [
-          lead_fid,
-        ]);
+        const leadfooterResult = await connection.query(leadfooterQuery, [lead_fid,]);
 
         if (leadfooterResult[0].length > 0) {
           try {
@@ -782,16 +771,7 @@ const updateFollowUpLead = async (req, res) => {
               UPDATE lead_footer
               SET lead_hid = ?, comments = ?, calling_time = ?, no_of_calls = ?, lead_status_id = ?, follow_up_date = ?, isFollowUp = ?
               WHERE lead_fid = ?`;
-            await connection.query(updateLeadFooterQuery, [
-              leadId,
-              comments,
-              calling_time,
-              no_of_calls,
-              lead_status_id,
-              follow_up_date,
-              1,
-              lead_fid,
-            ]);
+            await connection.query(updateLeadFooterQuery, [leadId, comments, calling_time, no_of_calls, lead_status_id, follow_up_date, 1, lead_fid]);
           } catch (error) {
             // Rollback the transaction
             await connection.rollback();
@@ -803,21 +783,9 @@ const updateFollowUpLead = async (req, res) => {
             isFollowUp = 1;
           }
           //insert lead header id  and lead footer id  table...
-          const insertLeadFooterQuery =
-            "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id, isFollowUp ) VALUES (?, ?, ?, ?, ?, ?, ?)";
-          const insertLeadFooterValues = [
-            leadId,
-            comments,
-            follow_up_date,
-            calling_time,
-            no_of_calls,
-            lead_status_id,
-            isFollowUp,
-          ];
-          const insertLeadFooterResult = await connection.query(
-            insertLeadFooterQuery,
-            insertLeadFooterValues
-          );
+          const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id, isFollowUp ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+          const insertLeadFooterValues = [leadId, comments, follow_up_date, calling_time, no_of_calls, lead_status_id, isFollowUp];
+          const insertLeadFooterResult = await connection.query(insertLeadFooterQuery, insertLeadFooterValues);
           const lead_fid = insertLeadFooterResult[0].insertId;
         }
       }
@@ -1161,7 +1129,7 @@ const getTodaysCallsLeadList = async (req, res) => {
         ON e.employee_id = u.employee_id
         LEFT JOIN lead_status ls
         ON ls.lead_status_id = lf.lead_status_id
-        WHERE (lh.customer_id = ${employeeDetails.customer_id}  AND DATE(lf.cts )= '${today_date}') ` ;
+        WHERE (lh.customer_id = ${employeeDetails.customer_id}  AND DATE(lf.cts )= '${today_date}') `;
     let countQuery = ` SELECT COUNT(*) AS total FROM lead_footer lf  
       LEFT JOIN lead_header lh
       ON lh.lead_hid = lf.lead_hid
@@ -1173,7 +1141,7 @@ const getTodaysCallsLeadList = async (req, res) => {
       ON e.employee_id = u.employee_id
       LEFT JOIN lead_status ls
       ON ls.lead_status_id = lf.lead_status_id
-      WHERE (lh.customer_id = ${employeeDetails.customer_id}   AND DATE(lf.cts )= '${today_date}') ` ;
+      WHERE (lh.customer_id = ${employeeDetails.customer_id}   AND DATE(lf.cts )= '${today_date}') `;
 
     getFollowUpQuery += " ORDER BY lf.cts ASC";
     // Apply pagination if both page and perPage are provided
