@@ -11,6 +11,7 @@ router.get('/patient-visit-checked-list/',checkAuth,patientregistrationControlle
 //get all patient visit list (all visit date, ischecked and checked) from patient_visit_list table
 router.get('/get-all-patient-visit-list',checkAuth,patientregistrationController.getAllPatientVisitList);
 router.get('/search-patient-registration',checkAuth,patientregistrationController.searchPatientRegistration);
+router.get('/search-patient-for-revisit',checkAuth,patientregistrationController.searchPatientForRevisit);
 router.get('/generate-mrno-entity-series/:id',checkAuth,patientregistrationController.generateMrnoEntitySeries);
 router.get('/:id',checkAuth,patientregistrationController.getPatientRegistration);
 router.put('/:id',checkAuth,patientregistrationController.updatePatientRegistration);
