@@ -620,26 +620,15 @@ const patientRevisit = async (req, res) => {
   }
   //get payment history...
   const paymentHistoryQuery = "SELECT * FROM payment_history WHERE mrno = ?";
-  const paymentHistoryResult = await pool.query(paymentHistoryQuery,[mrno]);
+  const paymentHistoryResult = await pool.query(paymentHistoryQuery, [mrno]);
 
-   if (paymentHistoryResult[0].length == 0) {
+  if (paymentHistoryResult[0].length == 0) {
     return error422("Payment history Not Found.", res);
   }
   const nowDate = new Date().toISOString().split("T")[0];
 
-  // const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
-  // const untitledResult = await pool.query(checkUntitledQuery);
-  // const customer_id =  untitledResult[0][0].customer_id;
-  // const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
-  // const customerResult = await pool.query(isCustomerQuery);
-  // const untitledId =  customerResult[0][0].untitled_id;
-  if (mrnoResult[0][0].registration_date) {
-     return error422("True",res);
-  }else{
-    return error422("false",res);
-  }
   try {
-   
+
     //insert into patient_visit_list 
     const insertPatientVisitListQuery = 'INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)';
     const insertPatientVisitListValues = [mrno, 'RE_VISIT', nowDate];
@@ -850,7 +839,73 @@ const getAllPatientVisitList = async (req, res) => {
     return error500(error, res);
   }
 }
+const searchPatientForRevisit = async (req, res) => {
+  const { page, perPage, key } = req.query;
+  const untitled_id = req.companyData.untitled_id;
+  //Check if untitled exists
+  const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  if (untitledExistResult[0].length == 0) {
+    return error422("USER Not Found.", res);
+  }
+  const customer_id = untitledExistResult[0][0].customer_id;
+  if (!customer_id) {
+    return error422("Customer ID is required.", res);
+  }
+  if (!key) {
+    return error422("Search Key is required", res);
+  }
+  try {
+    let getPatientHistoryQuery = `SELECT p.*, CASE
+    WHEN ph.cts >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH) THEN 1
+    ELSE 0
+    END AS patientIsrenewly FROM payment_history ph
+    LEFT JOIN patient_registration p
+    ON p.mrno = ph.mrno
+    WHERE p.customer_id = ${customer_id}`;
 
+    let countQuery = `SELECT COUNT(*) AS total FROM payment_history ph
+    LEFT JOIN patient_registration p
+    ON p.mrno = ph.mrno
+    WHERE p.customer_id = ${customer_id}`;
+
+    getPatientHistoryQuery += ` AND (p.mobile_no = '${key}' ) `;
+    countQuery += ` AND (p.mobile_no = '${key}') `;
+    getPatientHistoryQuery += " ORDER BY p.cts DESC";
+
+    // Apply pagination if both page and perPage are provided
+    let total = 0;
+    if (page && perPage) {
+      const totalResult = await pool.query(countQuery);
+      total = parseInt(totalResult[0][0].total);
+
+      const start = (page - 1) * perPage;
+      getPatientHistoryQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+    }
+
+    const result = await pool.query(getPatientHistoryQuery);
+    const patient_registration = result[0];
+
+    const data = {
+      status: 200,
+      message: "Search Patient For Revisit retrieved successfully",
+      data: patient_registration,
+    };
+    // Add pagination information if provided
+    if (page && perPage) {
+      data.pagination = {
+        per_page: perPage,
+        total: total,
+        current_page: page,
+        last_page: Math.ceil(total / perPage)
+      };
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return error500(error, res);
+  }
+}
 module.exports = {
   addPatientRegistration,
   getPatientRegistrations,
@@ -863,5 +918,6 @@ module.exports = {
   patientRevisit,
   generateMrnoEntitySeries,
   searchPatientRegistration,
-  getAllPatientVisitList
+  getAllPatientVisitList,
+  searchPatientForRevisit
 };
