@@ -856,21 +856,23 @@ const searchPatientForRevisit = async (req, res) => {
     return error422("Search Key is required", res);
   }
   try {
-    let getPatientHistoryQuery = `SELECT p.*, e.entity_name, e.abbrivation, CASE
+    let getPatientHistoryQuery = `SELECT p.*, ph.cts AS patient_history_cts, e.entity_name, e.abbrivation, 
+    CASE
     WHEN ph.cts >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH) THEN 1
     ELSE 0
-    END AS patientIsrenewly FROM payment_history ph
+    END AS patientIsrenewly 
+    FROM payment_history ph
     LEFT JOIN patient_registration p
     ON p.mrno = ph.mrno
     LEFT JOIN entity e
     ON e.entity_id = p.entity_id
-    WHERE p.customer_id = ${customer_id} AND ph.service_id = 0`;
+    WHERE p.customer_id = ${customer_id} AND ph.service_id = 0 AND isRenew = 0 `;
     let countQuery = `SELECT COUNT(*) AS total FROM payment_history ph
     LEFT JOIN patient_registration p
     ON p.mrno = ph.mrno
     LEFT JOIN entity e
     ON e.entity_id = p.entity_id
-    WHERE p.customer_id = ${customer_id} AND ph.service_id = 0`;
+    WHERE p.customer_id = ${customer_id} AND ph.service_id = 0 AND isRenew = 0 `;
 
     getPatientHistoryQuery += ` AND (p.mobile_no = '${key}' ) `;
     countQuery += ` AND (p.mobile_no = '${key}') `;
@@ -911,6 +913,10 @@ const searchPatientForRevisit = async (req, res) => {
 const patientRenewly = async (req, res) => {
   const mrno = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
+  const visit_type = req.body.visit_type;
+  if (!visit_type || visit_type != 'RE_VISIT') {
+    return error422("Patient Visit Type is required.", res);
+  }
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
   const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
@@ -938,7 +944,8 @@ const patientRenewly = async (req, res) => {
   if (paymentHistoryResult[0].length == 0) {
     return error422("Payment history Not Found.", res);
   }
-
+  // Attempt to obtain a database connection
+  let connection = await getConnection();
   try {
     let nowDate = new Date();
     // Assuming paymentHistoryResult is an array of objects
@@ -949,23 +956,27 @@ const patientRenewly = async (req, res) => {
       if (ctsDate > threeMonthsAgo) {
         return error422(`Sorry This Patient some days remaining.`, res);
       } else {
+        // update payment history  case paper renew 
+        const insertPatientRenewQuery = `UPDATE payment_history SET isRenew = 1 WHERE mrno = ${mrno}`;
+        const patientRenewResult = await connection.query(insertPatientRenewQuery);
         //insert into payment history table
         const insertPaymentHistoryQuery = 'INSERT INTO payment_history (payment_type, mrno, amount, untitled_id ) VALUES (?, ?, ?, ?)';
         const insertPaymentHistoryValues = ['CASH', mrno, mrnoResult[0][0].amount, untitled_id];
-        const paymentHistoryResult = await pool.query(insertPaymentHistoryQuery, insertPaymentHistoryValues);
-        //insert into patient_visit_list 
+        const paymentHistoryResult = await connection.query(insertPaymentHistoryQuery, insertPaymentHistoryValues);
+        // //insert into patient_visit_list 
         const insertPatientVisitListQuery = 'INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)';
         const insertPatientVisitListValues = [mrno, 'RE_VISIT', nowDate];
-        const PatientVisitListResult = await pool.query(insertPatientVisitListQuery, insertPatientVisitListValues);
+        const PatientVisitListResult = await connection.query(insertPatientVisitListQuery, insertPatientVisitListValues);
 
       }
     }
-
+    connection.commit();
     return res.status(200).json({
       status: 200,
       message: "Patient Renew and Re_Visit Successfully. ",
     })
   } catch (error) {
+    await connection.rollback();
     console.log(error);
     return error500(error, res);
   }
