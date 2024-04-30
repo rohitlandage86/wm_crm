@@ -17,4 +17,5 @@ router.get('/:id',checkAuth,patientregistrationController.getPatientRegistration
 router.put('/:id',checkAuth,patientregistrationController.updatePatientRegistration);
 router.patch('/:id',checkAuth,patientregistrationController.onStatusChange);
 router.put('/patient-revisit/:id',checkAuth,patientregistrationController.patientRevisit);
+router.put('/patient-renewly/:id',checkAuth,patientregistrationController.patientRenewly);
 module.exports = router 
