@@ -123,7 +123,17 @@ const addbill = async (req, res) => {
 
 // get bill list
 const getBillList = async (req, res) => {
-  const { page, perPage, key, Bill_date } = req.query;
+  const {
+    page,
+    perPage,
+    key,
+    fromDate,
+    toDate,
+    Bill_date,
+    service_id,
+    service_type_id,
+    entity_id,
+  } = req.query;
   const untitled_id = req.companyData.untitled_id;
   //check if untitled exists
   const isUntitledExistQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
@@ -175,7 +185,27 @@ const getBillList = async (req, res) => {
       getBillQuery += ` AND DATE(b.cts) = '${Bill_date}'`;
       countQuery += ` AND DATE(b.cts) = '${Bill_date}'`;
     }
+       // filter from date and to date
+       if (fromDate && toDate) {
+        // Convert fromDate and toDate to UTC format
+        const fromUTCDate = new Date(fromDate).toISOString().split('T')[0];
+        const toUTCDate = new Date(toDate).toISOString().split('T')[0];
 
+        getBillQuery += ` AND DATE(b.cts) >= '${fromUTCDate}' AND DATE(b.cts) <= '${toUTCDate}'`;
+        countQuery += ` AND DATE(b.cts) >= '${fromUTCDate}' AND DATE(b.cts) <= '${toUTCDate}'`;
+    }
+    if (service_id) {
+      getBillQuery += ` AND b.service_id = '${service_id}'`;
+      countQuery += ` AND b.service_id = '${service_id}'`;
+    }
+    if (service_type_id) {
+      getBillQuery += ` AND b.service_type_id = '${service_type_id}'`;
+      countQuery += ` AND b.service_type_id = '${service_type_id}'`;
+    }
+    if (entity_id) {
+      getBillQuery += ` AND p.entity_id = '${entity_id}'`;
+      countQuery += ` AND p.entity_id = '${entity_id}'`;
+    }
     // Apply pagination if both page and perPage are provided
     let total = 0;
     if (page && perPage) {
@@ -455,9 +485,111 @@ const getBillEntityList = async (req, res) => {
   }
 };
 
+
+// get payment history list
+const getPaymentHistoryList = async (req, res) => {
+  const {
+    page,
+    perPage,
+    key,
+    fromDate,
+    toDate,
+    payment_date,
+
+  } = req.query;
+  const untitled_id = req.companyData.untitled_id;
+  //check if untitled exists
+  const isUntitledExistQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
+  const untitledResult = await pool.query(isUntitledExistQuery, [untitled_id]);
+  if (untitledResult[0].length == 0) {
+    return error422("User Not Found.", res);
+  }
+  const customer_id = untitledResult[0][0].customer_id;
+  if (!customer_id) {
+    return error422("Customer Id is required.", res);
+  }
+  
+  try {
+    let getPaymentHistoryQuery = `SELECT ph.*, p.registration_date, p.mrno_entity_series, p.patient_name, p.gender, p.age, p.mobile_no, p.city, p.address, p.entity_id,  e.abbrivation, e.entity_name FROM payment_history ph
+        LEFT JOIN patient_registration p 
+        ON p.mrno = ph.mrno
+        LEFT JOIN entity e
+        ON e.entity_id = p.entity_id
+        WHERE 
+        p.customer_id = ${customer_id} `;
+
+    let countQuery = `SELECT COUNT(*) AS total FROM payment_history ph
+        LEFT JOIN patient_registration p 
+        ON p.mrno = ph.mrno 
+        LEFT JOIN entity e
+        ON e.entity_id = p.entity_id
+        WHERE 
+        p.customer_id = ${customer_id} 
+        `;
+
+    if (key) {
+      const lowercaseKey = key.toLowerCase().trim().replace(/'/g, "\\'");
+      if (key === "activated") {
+        getPaymentHistoryQuery += ` AND p.status = 1`;
+        countQuery += ` AND p.status = 1`;
+      } else if (key === "deactivated") {
+        getPaymentHistoryQuery += ` AND p.status = 0`;
+        countQuery += ` AND p.status = 0`;
+      } else {
+        getPaymentHistoryQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+        countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+      }
+    }
+
+    if (payment_date) {
+      getPaymentHistoryQuery += ` AND DATE(ph.cts) = '${payment_date}'`;
+      countQuery += ` AND DATE(ph.cts) = '${payment_date}'`;
+    }
+     // filter from date and to date
+     if (fromDate && toDate) {
+      // Convert fromDate and toDate to UTC format
+      const fromUTCDate = new Date(fromDate).toISOString().split('T')[0];
+      const toUTCDate = new Date(toDate).toISOString().split('T')[0];
+
+      getPaymentHistoryQuery += ` AND DATE(ph.cts) >= '${fromUTCDate}' AND DATE(ph.cts) <= '${toUTCDate}'`;
+      countQuery += ` AND DATE(ph.cts) >= '${fromUTCDate}' AND DATE(ph.cts) <= '${toUTCDate}'`;
+  }
+  
+    // Apply pagination if both page and perPage are provided
+    let total = 0;
+    if (page && perPage) {
+      const totalResult = await pool.query(countQuery);
+      total = parseInt(totalResult[0][0].total);
+      const start = (page - 1) * perPage;
+      getPaymentHistoryQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+    }
+    const result = await pool.query(getPaymentHistoryQuery);
+    const Payment = result[0];
+    const data = {
+      status: 200,
+      message: "Payment History retrieved successfully",
+      data: Payment,
+    };
+    //Add pagination information if provided
+    if (page && perPage) {
+      data.pagination = {
+        per_page: perPage,
+        total: total,
+        current_page: page,
+        last_page: Math.ceil(total / perPage),
+      };
+    }
+    return res.json(data);
+  } catch (error) {
+    console.log(error);
+    return error500(error, res);
+  }
+};
+
 module.exports = {
   addbill,
   getBillList,
+  getPaymentHistoryList,
   getBillById,
   getBillByMrno,
   getBillEntityList,
