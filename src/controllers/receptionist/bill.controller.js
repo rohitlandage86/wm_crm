@@ -155,8 +155,7 @@ const getBillList = async (req, res) => {
         ON st.service_type_id = b.service_type_id
         LEFT JOIN services s 
         ON s.service_id = b.service_id
-        WHERE 
-    b.customer_id = ${customer_id} `;
+        WHERE b.customer_id = ${customer_id} `;
 
     let countQuery = `SELECT COUNT(*) AS total FROM bill b
         LEFT JOIN patient_registration p 
@@ -165,8 +164,7 @@ const getBillList = async (req, res) => {
         ON e.entity_id = p.entity_id
         LEFT JOIN service_type st 
         ON st.service_type_id = b.service_type_id
-        WHERE 
-        b.customer_id = ${customer_id} 
+        WHERE b.customer_id = ${customer_id} 
         `;
 
     if (key) {

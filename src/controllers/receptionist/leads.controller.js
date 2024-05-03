@@ -194,8 +194,8 @@ const getLeadHeaders = async (req, res) => {
         getLeadHeaderQuery += ` AND l.status = 0`;
         countQuery += ` AND l.status = 0`;
       } else {
-        // getLeadHeaderQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
-        // countQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
+        getLeadHeaderQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
+        countQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
       }
     }
     if (fromDate && toDate) {
@@ -1023,6 +1023,14 @@ const getFollowUpLeadsReportList = async (req, res) => {
     let countQuery = ` SELECT COUNT(*) AS total FROM lead_footer lf  
       LEFT JOIN lead_header lh
       ON lh.lead_hid = lf.lead_hid
+      LEFT JOIN category c
+      ON c.category_id = lh.category_id
+      LEFT JOIN untitled u
+      ON u.untitled_id = lh.untitled_id
+      LEFT JOIN employee e
+      ON e.employee_id = u.employee_id
+      LEFT JOIN lead_status ls
+      ON ls.lead_status_id = lf.lead_status_id
       WHERE lh.customer_id = ${employeeDetails.customer_id} `;
 
     if (follow_up_date) {
@@ -1038,14 +1046,14 @@ const getFollowUpLeadsReportList = async (req, res) => {
     if (key) {
       const lowercaseKey = key.toLowerCase().trim();
       if (key === "activated") {
-        getFollowUpQuery += ` AND l.status = 1`;
-        countQuery += ` AND l.status = 1`;
+        getFollowUpQuery += ` AND lh.status = 1`;
+        countQuery += ` AND lh.status = 1`;
       } else if (key === "deactivated") {
-        getFollowUpQuery += ` AND l.status = 0`;
-        countQuery += ` AND l.status = 0`;
+        getFollowUpQuery += ` AND lh.status = 0`;
+        countQuery += ` AND lh.status = 0`;
       } else {
-        getFollowUpQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
-        countQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
+        getFollowUpQuery += ` AND (LOWER(lh.name ) LIKE '%${lowercaseKey}%' OR LOWER(lh.mobile_number) LIKE '%${lowercaseKey}%' ) `;
+        countQuery += ` AND (LOWER(lh.name ) LIKE '%${lowercaseKey}%' OR LOWER(lh.mobile_number) LIKE '%${lowercaseKey}%' ) `;
       }
     }
     if (fromDate && toDate) {
