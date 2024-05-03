@@ -5,6 +5,7 @@ const checkAuth = require("../../middleware/check.auth");
 
 router.post('/',checkAuth,billController.addbill);
 router.get('/',checkAuth,billController.getBillList);
+router.get('/payment-history',checkAuth,billController.getPaymentHistoryList);
 router.get('/Entity/:id',checkAuth,billController.getBillEntityList);
 router.get('/:id',checkAuth,billController.getBillById);
 router.get('/patient-consultation-by-mrno/:id',checkAuth,billController.getBillByMrno);
