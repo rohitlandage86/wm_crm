@@ -426,31 +426,55 @@ const getConsultationById = async (req, res) => {
     }
 
     try {
-        let getConsultationQuery = `SELECT c.*, p.* FROM consultation c 
+        let getConsultationQuery = `SELECT c.*, p.*, e.name AS employee_name FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
+        LEFT JOIN employee e
+        ON p.employee_id = e.employee_id
         WHERE c.consultation_id = ${consultationId}`;
         const result = await pool.query(getConsultationQuery);
         let consultations = result[0][0];
 
         //query consultation chief complaints 
-        const consultationChiefComplaintsQuery = `SELECT * FROM  consultation_chief_complaints WHERE consultation_id = ${consultationId}`;
+        const consultationChiefComplaintsQuery = `
+        SELECT cc.*, c.chief_complaint
+        FROM consultation_chief_complaints cc
+        LEFT JOIN chief_complaints c 
+        ON c.chief_complaint_id = cc.chief_complaints_id  
+        WHERE cc.consultation_id =  ${consultationId}`;
         const consultationChiefComplaintsResult = await pool.query(consultationChiefComplaintsQuery);
         consultations['consultationChiefComplaintsDetails'] = consultationChiefComplaintsResult[0];
 
         //query consultation diagnosis 
-        const consultationDiagnosisQuery = `SELECT * FROM  consultation_diagnosis WHERE consultation_id = ${consultationId}`;
+        const consultationDiagnosisQuery = ` 
+        SELECT cd.*, d.diagnosis_name 
+        FROM consultation_diagnosis cd 
+        LEFT JOIN diagnosis d ON d.diagnosis_id = cd.diagnosis_id  
+        WHERE cd.consultation_id = ${consultationId}`;
         const consultationDiagnosisResult = await pool.query(consultationDiagnosisQuery);
         consultations['consultationDiagnosisDetails'] = consultationDiagnosisResult[0];
 
         //query consultation  treatment 
-        const consultationTreatmentQuery = `SELECT * FROM consultation_treatment_advice  WHERE consultation_id = ${consultationId}`;
+        const consultationTreatmentQuery = `
+        SELECT ct.*, t.treatment_name
+        FROM consultation_treatment_advice ct 
+        LEFT JOIN treatment t ON t.treatment_id = ct.treatment_id  
+        WHERE ct.consultation_id = ${consultationId}`;
         const consultationTreatmentResult = await pool.query(consultationTreatmentQuery);
         consultations['consultationTreatmentDetails'] = consultationTreatmentResult[0];
 
 
         // query consultation medicine 
-        const consultationMedicineQuery = `SELECT * FROM consultation_medicine   WHERE consultation_id = ${consultationId}`;
+        const consultationMedicineQuery = `
+        SELECT cm.*, m.medicines_name, i.instruction, d.dosage_name
+        FROM consultation_medicine cm
+        LEFT JOIN medicines m 
+        ON m.medicines_id = cm.medicines_id  
+        LEFT JOIN instructions i 
+        ON i.instructions_id = cm.instructions_id 
+        LEFT JOIN dosages d
+        ON d.dosage_id = cm.dosages_id 
+        WHERE cm.consultation_id =${consultationId}`;
         const consultationMedicineResult = await pool.query(consultationMedicineQuery);
         consultations['consultationMedicineDetails'] = consultationMedicineResult[0];
 

@@ -186,8 +186,8 @@ const getPatientRegistrations = async (req, res) => {
         getPatientRegistrationQuery += ` AND p.status = 0`;
         countQuery += ` AND p.status = 0`;
       } else {
-        // getPatientRegistrationQuery += ` AND (LOWER(p.mrno ) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
-        // countQuery += ` AND (LOWER(p.mrno ) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
+        getPatientRegistrationQuery += ` AND (LOWER(p.mobile_no) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
+        countQuery += ` AND (LOWER(p.mobile_no) LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
       }
     }
     // filter from date and to date
@@ -792,8 +792,8 @@ const getAllPatientVisitList = async (req, res) => {
         getPatientVisitListsQuery += ` AND p.status = 0`;
         countQuery += ` AND p.status = 0`;
       } else {
-        // getPatientVisitListsQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
-        // countQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
+        getPatientVisitListsQuery += ` AND (LOWER(pr.mobile_no) LIKE '%${lowercaseKey}%' OR LOWER(pr.patient_name) LIKE '%${lowercaseKey}%' )  `;
+        countQuery += ` AND (LOWER(pr.mobile_no) LIKE '%${lowercaseKey}%' OR LOWER(pr.patient_name) LIKE '%${lowercaseKey}%' ) `;
       }
     }
     if (fromDate && toDate) {

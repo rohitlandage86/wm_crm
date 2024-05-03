@@ -227,14 +227,14 @@ const getAllStateList = async (req, res) => {
 const getDemo = async (req, res) => {
   try {
     const query = `SELECT h.* 
-  FROM   nirmitisangli_tbl_inquiry_header h
+  FROM   nirmitikolhapur_tbl_inquiry_header h
   where h.inquiry_date >= '2023-10-01' 
   ORDER BY h.inquiry_date DESC;`
     const result = await pool.query(query)
     let leadResult = result[0];
     for (let index = 0; index < leadResult.length; index++) {
       const element = leadResult[index];
-      let footerQuery = `SELECT * FROM nirmitisangli_tbl_inquiry_footer WHERE inquiry_id = ${element.inquiry_id}`;
+      let footerQuery = `SELECT * FROM nirmitikolhapur_tbl_inquiry_footer WHERE inquiry_id = ${element.inquiry_id}`;
       let footerResult = await pool.query(footerQuery);
       leadResult[index]['leadFooterDetails'] = footerResult[0]
     }
@@ -311,9 +311,9 @@ const getLeadOPDList = async (req, res)=>{
         f.cts,
           ROW_NUMBER() OVER(PARTITION BY h.inquiry_id ORDER BY f.follow_up_date DESC) AS rn
       FROM 
-          nirmitisangli_tbl_inquiry_header AS h
+          nirmitikolhapur_tbl_inquiry_header AS h
       JOIN 
-          nirmitisangli_tbl_inquiry_footer AS f
+          nirmitikolhapur_tbl_inquiry_footer AS f
       ON 
           f.inquiry_id = h.inquiry_id
       WHERE 
@@ -362,7 +362,7 @@ const wmLeadUpload = async (req, res)=>{
       const element = leadData[index];
       let insertQuery = `INSERT INTO lead_header ( lead_date, category_id, name, city, mobile_number, note, customer_id, untitled_id) VALUES
        (?, ?, ?, ?, ?, ?, ?, ?)`;
-      let insertValue = [element.inquiry_date, element.inquiry_type_id, element.name, element.city, element.mobile, element.inquiry_description, 1, 3]
+      let insertValue = [element.inquiry_date, element.inquiry_type_id, element.name, element.city, element.mobile, element.inquiry_description, 4, 7]
       let LeadResult = await connection.query(insertQuery, insertValue);
       let insertFooterQuery = `INSERT INTO lead_footer ( lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id) VALUES
       (?, ?, ?, ?, ?, ?)`;
