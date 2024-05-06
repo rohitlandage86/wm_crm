@@ -313,7 +313,8 @@ const createConsultation = async (req, res) => {
         await connection.commit();
         return res.status(200).json({
             status: 200,
-            message: "Consultation added successfully"
+            message: "Consultation added successfully",
+            consultation_id:consultation_id
         });
     } catch (error) {
         console.log(error);
