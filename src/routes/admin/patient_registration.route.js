@@ -10,6 +10,7 @@ router.get('/patient-visit-list/',checkAuth,patientregistrationController.getPat
 router.get('/patient-visit-checked-list/',checkAuth,patientregistrationController.getPatientVisitCheckedLists);
 //get all patient visit list (all visit date, ischecked and checked) from patient_visit_list table
 router.get('/get-all-patient-visit-list',checkAuth,patientregistrationController.getAllPatientVisitList);
+router.get('/get-all-patient-visit-list/by-mrno',checkAuth,patientregistrationController.getPatientVisitListByMRNO);
 router.get('/search-patient-registration',checkAuth,patientregistrationController.searchPatientRegistration);
 router.get('/search-patient-for-revisit',checkAuth,patientregistrationController.searchPatientForRevisit);
 router.get('/generate-mrno-entity-series/:id',checkAuth,patientregistrationController.generateMrnoEntitySeries);
