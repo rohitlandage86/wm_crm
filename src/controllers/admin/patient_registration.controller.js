@@ -27,23 +27,31 @@ error500 = (error, res) => {
 // add Patient Registration...
 const addPatientRegistration = async (req, res) => {
   const entity_id = req.body.entity_id ? req.body.entity_id : "";
-  const registration_date = req.body.registration_date ? req.body.registration_date : "";
-  const mrno_entity_series = req.body.mrno_entity_series ? req.body.mrno_entity_series.trim() : "";
-  const patient_name = req.body.patient_name ? req.body.patient_name.trim() : "";
+  const registration_date = req.body.registration_date
+    ? req.body.registration_date
+    : "";
+  const mrno_entity_series = req.body.mrno_entity_series
+    ? req.body.mrno_entity_series.trim()
+    : "";
+  const patient_name = req.body.patient_name
+    ? req.body.patient_name.trim()
+    : "";
   const gender = req.body.gender ? req.body.gender.trim() : "";
   const age = req.body.age ? req.body.age : 0;
   const mobile_no = req.body.mobile_no ? req.body.mobile_no : "";
   const address = req.body.address ? req.body.address.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
   const state_id = req.body.state_id ? req.body.state_id : "";
-  const source_of_patient_id = req.body.source_of_patient_id ? req.body.source_of_patient_id : "";
+  const source_of_patient_id = req.body.source_of_patient_id
+    ? req.body.source_of_patient_id
+    : "";
   const employee_id = req.body.employee_id ? req.body.employee_id : "";
   const height = req.body.height ? req.body.height : 0;
   const weight = req.body.weight ? req.body.weight : 0;
   const bmi = req.body.bmi ? req.body.bmi : 0;
   const amount = req.body.amount ? req.body.amount : 0;
   const refered_by_id = req.body.refered_by_id ? req.body.refered_by_id : "";
-  const payment_type = req.body.payment_type ? req.body.payment_type : '';
+  const payment_type = req.body.payment_type ? req.body.payment_type : "";
   const untitled_id = req.companyData.untitled_id;
 
   if (!patient_name) {
@@ -70,7 +78,7 @@ const addPatientRegistration = async (req, res) => {
     return error422("Source Of Patient ID is required.", res);
   } else if (!employee_id) {
     return error422("Employee Id is required.", res);
-  } else if ((!amount) && (amount != 0)) {
+  } else if (!amount && amount != 0) {
     return error422("Amount is required.", res);
   } else if (!refered_by_id) {
     return error422("Refered By ID is required.", res);
@@ -79,9 +87,11 @@ const addPatientRegistration = async (req, res) => {
   } else if (!untitled_id) {
     return error422("Untitled ID is required.", res);
   }
-  //Check if untitled  
+  //Check if untitled
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [
+    untitled_id,
+  ]);
   if (untitledExistResult[0].length == 0) {
     return error422("USER Not Found.", res);
   }
@@ -90,8 +100,10 @@ const addPatientRegistration = async (req, res) => {
     return error422("Customer ID is required.", res);
   }
   //check patient_registration already is exists or not
-  const isExistPatientRegistrationQuery = `SELECT * FROM patient_registration WHERE (entity_id = ${entity_id} AND mobile_no = ${mobile_no}) AND (customer_id = ${customer_id} AND mobile_no = ${mobile_no});`
-  const isExistPatientRegistrationResult = await pool.query(isExistPatientRegistrationQuery);
+  const isExistPatientRegistrationQuery = `SELECT * FROM patient_registration WHERE (entity_id = ${entity_id} AND mobile_no = ${mobile_no}) AND (customer_id = ${customer_id} AND mobile_no = ${mobile_no});`;
+  const isExistPatientRegistrationResult = await pool.query(
+    isExistPatientRegistrationQuery
+  );
   if (isExistPatientRegistrationResult[0].length > 0) {
     return error422(" Patient is already exists.", res);
   }
@@ -103,33 +115,91 @@ const addPatientRegistration = async (req, res) => {
     await connection.beginTransaction();
     //insert into patient_registration master
     const insertPatientRegistrationQuery = `INSERT INTO patient_registration (entity_id, registration_date, mrno_entity_series, patient_name, gender, age, mobile_no, address, city, state_id, source_of_patient_id, employee_id, height, weight, bmi, amount, refered_by_id, customer_id, untitled_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const insertPatientRegistrationValues = [entity_id, registration_date, mrno_entity_series, patient_name, gender, age, mobile_no, address, city, state_id, source_of_patient_id, employee_id, height, weight, bmi, amount, refered_by_id, customer_id, untitled_id];
-    const patient_registrationResult = await connection.query(insertPatientRegistrationQuery, insertPatientRegistrationValues);
+    const insertPatientRegistrationValues = [
+      entity_id,
+      registration_date,
+      mrno_entity_series,
+      patient_name,
+      gender,
+      age,
+      mobile_no,
+      address,
+      city,
+      state_id,
+      source_of_patient_id,
+      employee_id,
+      height,
+      weight,
+      bmi,
+      amount,
+      refered_by_id,
+      customer_id,
+      untitled_id,
+    ];
+    const patient_registrationResult = await connection.query(
+      insertPatientRegistrationQuery,
+      insertPatientRegistrationValues
+    );
     const mrno = patient_registrationResult[0].insertId;
 
-    //insert into patient_visit_list 
-    const insertPatientVisitListQuery = 'INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)';
-    const insertPatientVisitListValues = [mrno, 'FIRST_VISIT', registration_date];
-    const PatientVisitListResult = await connection.query(insertPatientVisitListQuery, insertPatientVisitListValues);
+    //insert into patient_visit_list
+    const insertPatientVisitListQuery =
+      "INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)";
+    const insertPatientVisitListValues = [
+      mrno,
+      "FIRST_VISIT",
+      registration_date,
+    ];
+    const PatientVisitListResult = await connection.query(
+      insertPatientVisitListQuery,
+      insertPatientVisitListValues
+    );
 
     //insert into payment history table
-    const insertPaymentHistoryQuery = 'INSERT INTO payment_history (payment_type, mrno, amount, untitled_id ) VALUES (?, ?, ?, ?)';
-    const insertPaymentHistoryValues = [payment_type, mrno, amount, untitled_id];
-    const paymentHistoryResult = await connection.query(insertPaymentHistoryQuery, insertPaymentHistoryValues);
+    const insertPaymentHistoryQuery =
+      "INSERT INTO payment_history (payment_type, mrno, amount, untitled_id ) VALUES (?, ?, ?, ?)";
+    const insertPaymentHistoryValues = [
+      payment_type,
+      mrno,
+      amount,
+      untitled_id,
+    ];
+    const paymentHistoryResult = await connection.query(
+      insertPaymentHistoryQuery,
+      insertPaymentHistoryValues
+    );
 
     //check lead_header  is exists or not
     const isExistLeadHeaderQuery = `SELECT * FROM lead_header WHERE mobile_number = ? AND customer_id = ?`;
-    const isExistLeadHeaderResult = await connection.query(isExistLeadHeaderQuery, [mobile_no, customer_id]);
+    const isExistLeadHeaderResult = await connection.query(
+      isExistLeadHeaderQuery,
+      [mobile_no, customer_id]
+    );
     if (isExistLeadHeaderResult[0].length > 0) {
       const updateLeadFooterQuery = `
               UPDATE lead_footer
               SET  isFollowUp = ?
               WHERE lead_hid = ?`;
-      await connection.query(updateLeadFooterQuery, [1, isExistLeadHeaderResult[0][0].lead_hid]);
+      await connection.query(updateLeadFooterQuery, [
+        1,
+        isExistLeadHeaderResult[0][0].lead_hid,
+      ]);
       //insert  into lead footer  table...
-      const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls,lead_status_id, isFollowUp) VALUES (?, ?, ?, ?, ?, ?, ?)";
-      const insertLeadFooterValues = [isExistLeadHeaderResult[0][0].lead_hid, "PATIENT REGISTRATION", registration_date, '', '', 2, 1];
-      const insertLeadFooterResult = await connection.query(insertLeadFooterQuery, insertLeadFooterValues);
+      const insertLeadFooterQuery =
+        "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls,lead_status_id, isFollowUp) VALUES (?, ?, ?, ?, ?, ?, ?)";
+      const insertLeadFooterValues = [
+        isExistLeadHeaderResult[0][0].lead_hid,
+        "PATIENT REGISTRATION",
+        registration_date,
+        "",
+        "",
+        2,
+        1,
+      ];
+      const insertLeadFooterResult = await connection.query(
+        insertLeadFooterQuery,
+        insertLeadFooterValues
+      );
     }
     await connection.commit();
     res.status(200).json({
@@ -142,11 +212,24 @@ const addPatientRegistration = async (req, res) => {
 };
 // get patient_registrations list...
 const getPatientRegistrations = async (req, res) => {
-  const { page, perPage, key, fromDate, toDate, entity_id, gender, source_of_patient_id, employee_id, refered_by_id } = req.query;
+  const {
+    page,
+    perPage,
+    key,
+    fromDate,
+    toDate,
+    entity_id,
+    gender,
+    source_of_patient_id,
+    employee_id,
+    refered_by_id,
+  } = req.query;
   const untitled_id = req.companyData.untitled_id;
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [
+    untitled_id,
+  ]);
   if (untitledExistResult[0].length == 0) {
     return error422("USER Not Found.", res);
   }
@@ -218,7 +301,7 @@ const getPatientRegistrations = async (req, res) => {
     //filter refered by id
     if (refered_by_id) {
       getPatientRegistrationQuery += ` AND p.refered_by_id = '${refered_by_id}'`;
-      countQuery += ` AND p.refered_by_id = '${refered_by_id}'`
+      countQuery += ` AND p.refered_by_id = '${refered_by_id}'`;
     }
     getPatientRegistrationQuery += " ORDER BY p.registration_date DESC";
     // Apply pagination if both page and perPage are provided
@@ -245,7 +328,7 @@ const getPatientRegistrations = async (req, res) => {
         per_page: perPage,
         total: total,
         current_page: page,
-        last_page: Math.ceil(total / perPage)
+        last_page: Math.ceil(total / perPage),
       };
     }
 
@@ -261,7 +344,9 @@ const getPatientRegistration = async (req, res) => {
 
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [
+    untitled_id,
+  ]);
   if (untitledExistResult[0].length == 0) {
     return error422("USER Not Found.", res);
   }
@@ -286,7 +371,10 @@ const getPatientRegistration = async (req, res) => {
         LEFT JOIN refered_by r
         ON r.refered_by_id = p.refered_by_id
         WHERE p.mrno = ? AND p.customer_id = ?`;
-    const patientregistrationResult = await pool.query(patientregistrationQuery, [mrno, customer_id]);
+    const patientregistrationResult = await pool.query(
+      patientregistrationQuery,
+      [mrno, customer_id]
+    );
     if (patientregistrationResult[0].length == 0) {
       return error422("Patient Not Found.", res);
     }
@@ -304,16 +392,24 @@ const getPatientRegistration = async (req, res) => {
 const updatePatientRegistration = async (req, res) => {
   const mrno = parseInt(req.params.id);
   const entity_id = req.body.entity_id ? req.body.entity_id : "";
-  const registration_date = req.body.registration_date ? req.body.registration_date : "";
-  const mrno_entity_series = req.body.mrno_entity_series ? req.body.mrno_entity_series.trim() : "";
-  const patient_name = req.body.patient_name ? req.body.patient_name.trim() : "";
+  const registration_date = req.body.registration_date
+    ? req.body.registration_date
+    : "";
+  const mrno_entity_series = req.body.mrno_entity_series
+    ? req.body.mrno_entity_series.trim()
+    : "";
+  const patient_name = req.body.patient_name
+    ? req.body.patient_name.trim()
+    : "";
   const gender = req.body.gender ? req.body.gender.trim() : "";
   const age = req.body.age ? req.body.age : 0;
   const mobile_no = req.body.mobile_no ? req.body.mobile_no : "";
   const address = req.body.address ? req.body.address.trim() : "";
   const city = req.body.city ? req.body.city.trim() : "";
   const state_id = req.body.state_id ? req.body.state_id : "";
-  const source_of_patient_id = req.body.source_of_patient_id ? req.body.source_of_patient_id : "";
+  const source_of_patient_id = req.body.source_of_patient_id
+    ? req.body.source_of_patient_id
+    : "";
   const height = req.body.height ? req.body.height : 0;
   const weight = req.body.weight ? req.body.weight : 0;
   const bmi = req.body.bmi ? req.body.bmi : 0;
@@ -354,7 +450,9 @@ const updatePatientRegistration = async (req, res) => {
   }
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [
+    untitled_id,
+  ]);
   if (untitledExistResult[0].length == 0) {
     return error422("User Not Found.", res);
   }
@@ -363,15 +461,20 @@ const updatePatientRegistration = async (req, res) => {
     return error422("Customer ID is required.", res);
   }
   // Check if patient_registration exists
-  const patientregistrationQuery = "SELECT * FROM patient_registration WHERE mrno  = ? AND customer_id = ?";
-  const patientregistrationResult = await pool.query(patientregistrationQuery, [mrno, customer_id]);
+  const patientregistrationQuery =
+    "SELECT * FROM patient_registration WHERE mrno  = ? AND customer_id = ?";
+  const patientregistrationResult = await pool.query(patientregistrationQuery, [
+    mrno,
+    customer_id,
+  ]);
   if (patientregistrationResult[0].length == 0) {
     return error422("Patient Not Found.", res);
   }
   // Check if the provided patient_registration exists and is active
-  const existingPatientRegistrationQuery =
-    `SELECT * FROM patient_registration WHERE ((entity_id = ${entity_id} AND mobile_no = ${mobile_no}) AND (customer_id = ${customer_id} AND mobile_no = ${mobile_no})) AND mrno !=${mrno} ;`
-  const existingPatientRegistrationResult = await pool.query(existingPatientRegistrationQuery);
+  const existingPatientRegistrationQuery = `SELECT * FROM patient_registration WHERE ((entity_id = ${entity_id} AND mobile_no = ${mobile_no}) AND (customer_id = ${customer_id} AND mobile_no = ${mobile_no})) AND mrno !=${mrno} ;`;
+  const existingPatientRegistrationResult = await pool.query(
+    existingPatientRegistrationQuery
+  );
 
   if (existingPatientRegistrationResult[0].length > 0) {
     return error422("Mobile No already exists.", res);
@@ -383,7 +486,28 @@ const updatePatientRegistration = async (req, res) => {
     entity_id = ?, registration_date = ?, mrno_entity_series = ?, patient_name = ?, gender = ?, age = ?, mobile_no = ?, address = ?, city = ?, state_id = ?, source_of_patient_id = ?, employee_id = ?, height = ?, weight = ?, bmi = ?, refered_by_id = ?, customer_id = ?, untitled_id = ?, mts = ? 
     WHERE mrno = ?`;
 
-    await pool.query(updateQuery, [entity_id, registration_date, mrno_entity_series, patient_name, gender, age, mobile_no, address, city, state_id, source_of_patient_id, employee_id, height, weight, bmi, refered_by_id, customer_id, untitled_id, nowDate, mrno]);
+    await pool.query(updateQuery, [
+      entity_id,
+      registration_date,
+      mrno_entity_series,
+      patient_name,
+      gender,
+      age,
+      mobile_no,
+      address,
+      city,
+      state_id,
+      source_of_patient_id,
+      employee_id,
+      height,
+      weight,
+      bmi,
+      refered_by_id,
+      customer_id,
+      untitled_id,
+      nowDate,
+      mrno,
+    ]);
 
     return res.status(200).json({
       status: 200,
@@ -399,8 +523,12 @@ const onStatusChange = async (req, res) => {
   const status = parseInt(req.query.status); // Validate and parse the status parameter
   try {
     // Check if the patient_registration  exists
-    const patientregistrationQuery = "SELECT * FROM patient_registration WHERE mrno = ?";
-    const patientregistrationResult = await pool.query(patientregistrationQuery, [patientregistrationId]);
+    const patientregistrationQuery =
+      "SELECT * FROM patient_registration WHERE mrno = ?";
+    const patientregistrationResult = await pool.query(
+      patientregistrationQuery,
+      [patientregistrationId]
+    );
 
     if (patientregistrationResult[0].length == 0) {
       return res.status(404).json({
@@ -442,7 +570,9 @@ const getPatientRegistrationWma = async (req, res) => {
   let patientregistrationQuery =
     "SELECT p.*  FROM patient_registration p LEFT JOIN untitled u ON u.untitled_id = p.untitled_id WHERE p.status =1 AND u.category=1 ORDER BY p.patient_name ";
   try {
-    const patientregistrationResult = await pool.query(patientregistrationQuery);
+    const patientregistrationResult = await pool.query(
+      patientregistrationQuery
+    );
     const patient_registration = patientregistrationResult[0];
 
     return res.status(200).json({
@@ -458,7 +588,7 @@ const getPatientRegistrationWma = async (req, res) => {
 const getPatientVisitLists = async (req, res) => {
   const { page, perPage, key } = req.query;
   const untitled_id = req.companyData.untitled_id;
-  const visit_date = new Date().toISOString().split('T')[0];
+  const visit_date = new Date().toISOString().split("T")[0];
 
   const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
   const untitledResult = await pool.query(checkUntitledQuery);
@@ -506,7 +636,6 @@ const getPatientVisitLists = async (req, res) => {
     const result = await pool.query(getPatientVisitListsQuery);
     const patient_visit_list = result[0];
 
-
     const data = {
       status: 200,
       message: "Patient Visit List retrieved successfully",
@@ -531,7 +660,7 @@ const getPatientVisitLists = async (req, res) => {
 const getPatientVisitCheckedLists = async (req, res) => {
   const { page, perPage, key } = req.query;
   const untitled_id = req.companyData.untitled_id;
-  const visit_date = new Date().toISOString().split('T')[0];
+  const visit_date = new Date().toISOString().split("T")[0];
 
   const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
   const untitledResult = await pool.query(checkUntitledQuery);
@@ -579,7 +708,6 @@ const getPatientVisitCheckedLists = async (req, res) => {
     const result = await pool.query(getPatientVisitListsQuery);
     const patient_visit_list = result[0];
 
-
     const data = {
       status: 200,
       message: "Patient Visit checked List retrieved successfully",
@@ -600,13 +728,13 @@ const getPatientVisitCheckedLists = async (req, res) => {
     return error500(error, res);
   }
 };
-//patient revisit 
+//patient revisit
 const patientRevisit = async (req, res) => {
   const mrno = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
 
   const visit_type = req.body.visit_type;
-  if (!visit_type || visit_type != 'RE_VISIT') {
+  if (!visit_type || visit_type != "RE_VISIT") {
     return error422("Patient Visit Type is required.", res);
   } else if (!mrno) {
     return error422("Patient MRNO is required.", res);
@@ -628,25 +756,31 @@ const patientRevisit = async (req, res) => {
   const nowDate = new Date().toISOString().split("T")[0];
 
   try {
-
-    //insert into patient_visit_list 
-    const insertPatientVisitListQuery = 'INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)';
-    const insertPatientVisitListValues = [mrno, 'RE_VISIT', nowDate];
-    const PatientVisitListResult = await pool.query(insertPatientVisitListQuery, insertPatientVisitListValues);
+    //insert into patient_visit_list
+    const insertPatientVisitListQuery =
+      "INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)";
+    const insertPatientVisitListValues = [mrno, "RE_VISIT", nowDate];
+    const PatientVisitListResult = await pool.query(
+      insertPatientVisitListQuery,
+      insertPatientVisitListValues
+    );
     return res.status(200).json({
       status: 200,
-      message: "Patient Re_Visit Successfully."
-    })
+      message: "Patient Re_Visit Successfully.",
+    });
   } catch (error) {
     return error500(error, res);
   }
-}
+};
 const generateMrnoEntitySeries = async (req, res) => {
   const entityId = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
   //Check if untitled exists
-  const isUntitledExistsQuery = "SELECT u.*, cb.* FROM untitled u LEFT JOIN wm_customer_branch cb ON cb.branch_id = u.branch_id WHERE u.untitled_id = ?";
-  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  const isUntitledExistsQuery =
+    "SELECT u.*, cb.* FROM untitled u LEFT JOIN wm_customer_branch cb ON cb.branch_id = u.branch_id WHERE u.untitled_id = ?";
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [
+    untitled_id,
+  ]);
   if (untitledExistResult[0].length == 0) {
     return error422("USER Not Found.", res);
   }
@@ -655,37 +789,50 @@ const generateMrnoEntitySeries = async (req, res) => {
     return error422("Customer ID is required.", res);
   }
 
-  // get customer untitled id for check  entity_id is exist 
-  const isCustomerUntitledQuery = "SELECT * FROM untitled WHERE  customer_id = ? AND category = 2";
-  const customerUntitledResut = await pool.query(isCustomerUntitledQuery, [customer_id]);
+  // get customer untitled id for check  entity_id is exist
+  const isCustomerUntitledQuery =
+    "SELECT * FROM untitled WHERE  customer_id = ? AND category = 2";
+  const customerUntitledResut = await pool.query(isCustomerUntitledQuery, [
+    customer_id,
+  ]);
   const customerUntitledId = customerUntitledResut[0][0].untitled_id;
 
-  //check entity is exsist 
+  //check entity is exsist
   const isExistEntityQuery = `SELECT * FROM entity WHERE entity_id = ${entityId} AND untitled_id = ${customerUntitledId}`;
   const entityResult = await pool.query(isExistEntityQuery);
   if (entityResult[0].length == 0) {
     return error422("Entity Not Found.", res);
   }
-  //get patient total count 
-  const getPatientCountQuery = "SELECT * FROM patient_registration WHERE entity_id = ?";
-  const patientRegistrationCount = await pool.query(getPatientCountQuery, [entityId]);
+  //get patient total count
+  const getPatientCountQuery =
+    "SELECT * FROM patient_registration WHERE entity_id = ?";
+  const patientRegistrationCount = await pool.query(getPatientCountQuery, [
+    entityId,
+  ]);
 
-  let mrnoEntitySeries = entityResult[0][0].abbrivation + '_' + untitledExistResult[0][0].city + '_' + (patientRegistrationCount[0].length + 1);
+  let mrnoEntitySeries =
+    entityResult[0][0].abbrivation +
+    "_" +
+    untitledExistResult[0][0].city +
+    "_" +
+    (patientRegistrationCount[0].length + 1);
 
   let data = {
     status: 200,
     message: "Generate mrno entity series successfully.",
-    mrnoEntitySeries: mrnoEntitySeries
-  }
-  return res.json(data)
-}
+    mrnoEntitySeries: mrnoEntitySeries,
+  };
+  return res.json(data);
+};
 //search patient registration by mobile and patient
 const searchPatientRegistration = async (req, res) => {
   const { page, perPage, key } = req.query;
   const untitled_id = req.companyData.untitled_id;
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [
+    untitled_id,
+  ]);
   if (untitledExistResult[0].length == 0) {
     return error422("USER Not Found.", res);
   }
@@ -749,7 +896,7 @@ const searchPatientRegistration = async (req, res) => {
         per_page: perPage,
         total: total,
         current_page: page,
-        last_page: Math.ceil(total / perPage)
+        last_page: Math.ceil(total / perPage),
       };
     }
 
@@ -757,7 +904,7 @@ const searchPatientRegistration = async (req, res) => {
   } catch (error) {
     return error500(error, res);
   }
-}
+};
 //get all patient visit lists...
 const getAllPatientVisitList = async (req, res) => {
   const { page, perPage, key, fromDate, toDate, visit_type } = req.query;
@@ -774,7 +921,7 @@ const getAllPatientVisitList = async (req, res) => {
     LEFT JOIN entity e
     ON e.entity_id = pr.entity_id
     WHERE pr.customer_id = ${customer_id}`;
-    // p.visit_date = '${visit_date}'  
+    // p.visit_date = '${visit_date}'
 
     let countQuery = `SELECT COUNT(*) AS total  FROM patient_visit_list p 
     LEFT JOIN patient_registration pr 
@@ -818,7 +965,6 @@ const getAllPatientVisitList = async (req, res) => {
     const result = await pool.query(getPatientVisitListsQuery);
     const patient_visit_list = result[0];
 
-
     const data = {
       status: 200,
       message: "Patient Visit Listretrieved successfully",
@@ -838,13 +984,15 @@ const getAllPatientVisitList = async (req, res) => {
   } catch (error) {
     return error500(error, res);
   }
-}
+};
 const searchPatientForRevisit = async (req, res) => {
   const { page, perPage, key } = req.query;
   const untitled_id = req.companyData.untitled_id;
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [
+    untitled_id,
+  ]);
   if (untitledExistResult[0].length == 0) {
     return error422("USER Not Found.", res);
   }
@@ -866,13 +1014,13 @@ const searchPatientForRevisit = async (req, res) => {
     ON p.mrno = ph.mrno
     LEFT JOIN entity e
     ON e.entity_id = p.entity_id
-    WHERE p.customer_id = ${customer_id} AND ph.service_id = 0 AND isRenew = 0 `;
+    WHERE p.customer_id = ${customer_id} AND (ph.service_id = 0 OR ph.service_id IS NULL) AND isRenew = 0 `;
     let countQuery = `SELECT COUNT(*) AS total FROM payment_history ph
     LEFT JOIN patient_registration p
     ON p.mrno = ph.mrno
     LEFT JOIN entity e
     ON e.entity_id = p.entity_id
-    WHERE p.customer_id = ${customer_id} AND ph.service_id = 0 AND isRenew = 0 `;
+    WHERE p.customer_id = ${customer_id} AND (ph.service_id = 0 OR ph.service_id IS NULL) AND isRenew = 0 `;
 
     getPatientHistoryQuery += ` AND (p.mobile_no = '${key}' ) `;
     countQuery += ` AND (p.mobile_no = '${key}') `;
@@ -901,7 +1049,7 @@ const searchPatientForRevisit = async (req, res) => {
         per_page: perPage,
         total: total,
         current_page: page,
-        last_page: Math.ceil(total / perPage)
+        last_page: Math.ceil(total / perPage),
       };
     }
 
@@ -909,17 +1057,19 @@ const searchPatientForRevisit = async (req, res) => {
   } catch (error) {
     return error500(error, res);
   }
-}
+};
 const patientRenewly = async (req, res) => {
   const mrno = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
   const visit_type = req.body.visit_type;
-  if (!visit_type || visit_type != 'RE_VISIT') {
+  if (!visit_type || visit_type != "RE_VISIT") {
     return error422("Patient Visit Type is required.", res);
   }
   //Check if untitled exists
   const isUntitledExistsQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
-  const untitledExistResult = await pool.query(isUntitledExistsQuery, [untitled_id]);
+  const untitledExistResult = await pool.query(isUntitledExistsQuery, [
+    untitled_id,
+  ]);
   if (untitledExistResult[0].length == 0) {
     return error422("USER Not Found.", res);
   }
@@ -932,7 +1082,8 @@ const patientRenewly = async (req, res) => {
   }
 
   //check if check mrno exists
-  const isExistMrnoQuery = "SELECT * FROM patient_registration WHERE mrno = ? AND customer_id = ?";
+  const isExistMrnoQuery =
+    "SELECT * FROM patient_registration WHERE mrno = ? AND customer_id = ?";
   const mrnoResult = await pool.query(isExistMrnoQuery, [mrno, customer_id]);
   if (mrnoResult[0].length == 0) {
     return error422("MRNO Not Found", res);
@@ -956,31 +1107,121 @@ const patientRenewly = async (req, res) => {
       if (ctsDate > threeMonthsAgo) {
         return error422(`Sorry This Patient some days remaining.`, res);
       } else {
-        // update payment history  case paper renew 
+        // update payment history  case paper renew
         const insertPatientRenewQuery = `UPDATE payment_history SET isRenew = 1 WHERE mrno = ${mrno}`;
-        const patientRenewResult = await connection.query(insertPatientRenewQuery);
+        const patientRenewResult = await connection.query(
+          insertPatientRenewQuery
+        );
         //insert into payment history table
-        const insertPaymentHistoryQuery = 'INSERT INTO payment_history (payment_type, mrno, amount, untitled_id ) VALUES (?, ?, ?, ?)';
-        const insertPaymentHistoryValues = ['CASH', mrno, mrnoResult[0][0].amount, untitled_id];
-        const paymentHistoryResult = await connection.query(insertPaymentHistoryQuery, insertPaymentHistoryValues);
-        // //insert into patient_visit_list 
-        const insertPatientVisitListQuery = 'INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)';
-        const insertPatientVisitListValues = [mrno, 'RE_VISIT', nowDate];
-        const PatientVisitListResult = await connection.query(insertPatientVisitListQuery, insertPatientVisitListValues);
-
+        const insertPaymentHistoryQuery =
+          "INSERT INTO payment_history (payment_type, mrno, amount, untitled_id ) VALUES (?, ?, ?, ?)";
+        const insertPaymentHistoryValues = [
+          "CASH",
+          mrno,
+          mrnoResult[0][0].amount,
+          untitled_id,
+        ];
+        const paymentHistoryResult = await connection.query(
+          insertPaymentHistoryQuery,
+          insertPaymentHistoryValues
+        );
+        // //insert into patient_visit_list
+        const insertPatientVisitListQuery =
+          "INSERT INTO patient_visit_list (mrno,visit_type,visit_date) VALUES (?,?,?)";
+        const insertPatientVisitListValues = [mrno, "RE_VISIT", nowDate];
+        const PatientVisitListResult = await connection.query(
+          insertPatientVisitListQuery,
+          insertPatientVisitListValues
+        );
       }
     }
     connection.commit();
     return res.status(200).json({
       status: 200,
       message: "Patient Renew and Re_Visit Successfully. ",
-    })
+    });
   } catch (error) {
     await connection.rollback();
     console.log(error);
     return error500(error, res);
   }
-}
+};
+// get All patient visit list by mrno...
+const getPatientVisitListByMRNO = async (req, res) => {
+  const { page, perPage, key, mrno } = req.query;
+  const untitled_id = req.companyData.untitled_id;
+
+  const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+  const untitledResult = await pool.query(checkUntitledQuery);
+  const customer_id = untitledResult[0][0].customer_id;
+  if (!mrno) {
+    return error422("MRNO is required.", res);
+  }
+  try {
+    let getPatientVisitListsQuery = `SELECT p.*, pr.mrno_entity_series, pr.patient_name, pr.gender, pr.age, pr.mobile_no, pr.address, pr.city, pr.height, pr.weight, pr.bmi, e.entity_name, e.abbrivation, pr.customer_id 
+    FROM patient_visit_list p 
+    LEFT JOIN patient_registration pr ON pr.mrno = p.mrno
+    LEFT JOIN entity e ON e.entity_id = pr.entity_id
+    WHERE pr.customer_id = ${customer_id} AND p.mrno = ${mrno}`;
+
+    let countQuery = `SELECT COUNT(*) AS total  FROM patient_visit_list p 
+    LEFT JOIN patient_registration pr 
+    ON pr.mrno = p.mrno
+    LEFT JOIN entity e
+    ON e.entity_id = pr.entity_id
+    WHERE  pr.customer_id = ${customer_id} AND p.mrno = ${mrno}`;
+    if (key) {
+      const lowercaseKey = key.toLowerCase().trim();
+      if (key === "activated") {
+        getPatientVisitListsQuery += ` AND p.status = 1`;
+        countQuery += ` AND p.status = 1`;
+      } else if (key === "deactivated") {
+        getPatientVisitListsQuery += ` AND p.status = 0`;
+        countQuery += ` AND p.status = 0`;
+      } else {
+        getPatientVisitListsQuery += ` AND (LOWER(pr.mobile_no) LIKE '%${lowercaseKey}%' OR LOWER(pr.patient_name) LIKE '%${lowercaseKey}%' )  `;
+        countQuery += ` AND (LOWER(pr.mobile_no) LIKE '%${lowercaseKey}%' OR LOWER(pr.patient_name) LIKE '%${lowercaseKey}%' ) `;
+      }
+    }
+
+    // Filter by visit MRNO
+    if (mrno) {
+      getPatientVisitListsQuery += ` AND p.mrno = '${mrno}'`;
+      countQuery += ` AND p.mrno = '${mrno}'`;
+    }
+    // Apply pagination if both page and perPage are provided
+    let total = 0;
+    if (page && perPage) {
+      const totalResult = await pool.query(countQuery);
+      total = parseInt(totalResult[0][0].total);
+
+      const start = (page - 1) * perPage;
+      getPatientVisitListsQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+    }
+
+    const result = await pool.query(getPatientVisitListsQuery);
+    const patient_visit_list = result[0];
+
+    const data = {
+      status: 200,
+      message: "Patient Visit Listretrieved successfully",
+      data: patient_visit_list,
+    };
+    // Add pagination information if provided
+    if (page && perPage) {
+      data.pagination = {
+        per_page: perPage,
+        total: total,
+        current_page: page,
+        last_page: Math.ceil(total / perPage),
+      };
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return error500(error, res);
+  }
+};
 // const patientRE
 module.exports = {
   addPatientRegistration,
@@ -996,5 +1237,6 @@ module.exports = {
   searchPatientRegistration,
   getAllPatientVisitList,
   searchPatientForRevisit,
-  patientRenewly
+  patientRenewly,
+  getPatientVisitListByMRNO,
 };
