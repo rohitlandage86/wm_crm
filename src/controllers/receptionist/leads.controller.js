@@ -246,6 +246,7 @@ const getLeadHeaders = async (req, res) => {
 const getLeadsHeaderById = async (req, res) => {
   const leadheaderId = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
+  const { page, perPage } = req.query;
 
   //check untitled_id already is exists or not
   const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
@@ -262,25 +263,44 @@ const getLeadsHeaderById = async (req, res) => {
     LEFT JOIN category c
     ON c.category_id = lh.category_id
     WHERE lh.lead_hid = ? AND lh.customer_id = ?`;
-    const leadheaderResult = await pool.query(leadheaderQuery, [
-      leadheaderId,
-      employeeDetails.customer_id,
-    ]);
+    const leadheaderResult = await pool.query(leadheaderQuery, [leadheaderId, employeeDetails.customer_id,]);
 
-    const leadfooterQuery = `SELECT lf.*, ls.lead_status FROM lead_footer lf LEFT JOIN lead_status ls ON ls.lead_status_id = lf.lead_status_id  WHERE lf.lead_hid = ? ORDER BY lf.cts DESC`;
+    let leadfooterQuery = `SELECT lf.*, ls.lead_status FROM lead_footer lf LEFT JOIN lead_status ls ON ls.lead_status_id = lf.lead_status_id  WHERE lf.lead_hid = ? ORDER BY lf.cts DESC `;
+    let countQuery = `SELECT COUNT(*) AS total  FROM lead_footer lf LEFT JOIN lead_status ls ON ls.lead_status_id = lf.lead_status_id  WHERE lf.lead_hid = ? `;
+    // Apply pagination if both page and perPage are provided
+    let total = 0;
+    if (page && perPage) {
+      const totalResult = await pool.query(countQuery, [leadheaderId]);
+      total = parseInt(totalResult[0][0].total);
+      const start = (page - 1) * perPage;
+      leadfooterQuery += ` LIMIT ${perPage} OFFSET ${start}`;
+    }
+
     const leadfooterResult = await pool.query(leadfooterQuery, [leadheaderId]);
-
     if (leadheaderResult[0].length === 0) {
       return error422("Leads Not Found.", res);
     }
     leadheaderResult[0][0]["leadFooterDetails"] = leadfooterResult[0];
     const lead = leadheaderResult[0][0];
-    return res.status(200).json({
+
+    const data = {
       status: 200,
       message: "Leads Retrieved Successfully",
       data: lead,
-    });
+    };
+
+    // Add pagination information if provided
+    if (page && perPage) {
+      data.pagination = {
+        per_page: perPage,
+        total: total,
+        current_page: page,
+        last_page: Math.ceil(total / perPage),
+      };
+    }
+    return res.status(200).json(data);
   } catch (error) {
+    console.log(error);
     return error500(error, res);
   }
 };
@@ -748,7 +768,7 @@ const updateFollowUpLead = async (req, res) => {
     UPDATE lead_header
     SET category_id = ? 
     WHERE lead_hid = ? `;
-    await connection.query(updateQuery, [category_id,leadId]);
+    await connection.query(updateQuery, [category_id, leadId]);
 
     //lead footer update as a follow up
     if (leadFooterDetails) {
