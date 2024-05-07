@@ -1346,6 +1346,19 @@ const getConsultationDiagnosisList = async (req, res) => {
     WHERE c.customer_id = ${customer_id}
      `;
 
+     if (key) {
+        const lowercaseKey = key.toLowerCase().trim().replace(/'/g, "\\'");;
+        if (key === "activated") {
+            consultationDiagnosisQuery += ` AND p.status = 1`;
+            countQuery += ` AND p.status = 1`;
+        } else if (key === "deactivated") {
+            consultationDiagnosisQuery += ` AND p.status = 0`;
+            countQuery += ` AND p.status = 0`;
+        } else {
+            consultationDiagnosisQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+            countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+        }
+    }
     // filter from date and to date
     if (fromDate && toDate) {
         // Convert fromDate and toDate to UTC format
@@ -1437,6 +1450,19 @@ const getConsultationTreatmentList = async (req, res) => {
     ON e.entity_id = p.entity_id
     WHERE c.customer_id = ${customer_id}`;
 
+    if (key) {
+        const lowercaseKey = key.toLowerCase().trim().replace(/'/g, "\\'");;
+        if (key === "activated") {
+            consultationTreatmentQuery += ` AND p.status = 1`;
+            countQuery += ` AND p.status = 1`;
+        } else if (key === "deactivated") {
+            consultationTreatmentQuery += ` AND p.status = 0`;
+            countQuery += ` AND p.status = 0`;
+        } else {
+            consultationTreatmentQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+            countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%')`;
+        }
+    } 
     // filter from date and to date
     if (fromDate && toDate) {
         // Convert fromDate and toDate to UTC format
