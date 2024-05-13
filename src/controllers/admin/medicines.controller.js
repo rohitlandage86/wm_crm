@@ -24,16 +24,23 @@ const addMedicines = async (req, res) => {
     const dosage_id = req.body.dosage_id ? req.body.dosage_id : null;
     const instructions_id = req.body.instructions_id ? req.body.instructions_id : null;
     const untitled_id = req.companyData.untitled_id;
+    //  add a chief complaint for insert admin untitled id
+    const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
+    const untitledResult = await pool.query(checkUntitledQuery);
+    const customer_id =  untitledResult[0][0].customer_id;
+    const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
+    const customerResult = await pool.query(isCustomerQuery);
+    const untitledId =  customerResult[0][0].untitled_id;
 
     if (!medicines_name) {
         return error422("Medicines Name   is required.", res);
-    } else if (!untitled_id) {
+    } else if (!untitledId) {
         return error422("Untitled ID is required.", res);
     }
     if (dosage_id) {
         //check if check dosage_id exists
         const isExistDosageQuery = "SELECT * FROM dosages WHERE dosage_id = ? AND untitled_id = ?";
-        const dosageResult = await pool.query(isExistDosageQuery, [dosage_id, untitled_id]);
+        const dosageResult = await pool.query(isExistDosageQuery, [dosage_id, untitledId]);
         if (dosageResult[0].length == 0) {
             return error422("Dosage Not Found", res);
         }
@@ -41,14 +48,14 @@ const addMedicines = async (req, res) => {
     if (instructions_id) {
         //check if instructions_id exists
         const isExistInstructionQuery = "SELECT * FROM instructions WHERE instructions_id = ? AND untitled_id = ?";
-        const instructionsResult = await pool.query(isExistInstructionQuery, [instructions_id, untitled_id]);
+        const instructionsResult = await pool.query(isExistInstructionQuery, [instructions_id, untitledId]);
         if (instructionsResult[0].length == 0) {
             return error422("Instruction Not Found", res);
         }
     }
     //check medicines  already is exists or not
     const isExistMedicinesQuery = `SELECT * FROM medicines WHERE LOWER(TRIM(medicines_name))= ? AND untitled_id = ?`;
-    const isExistMedicinesResult = await pool.query(isExistMedicinesQuery, [medicines_name.toLowerCase(), untitled_id]);
+    const isExistMedicinesResult = await pool.query(isExistMedicinesQuery, [medicines_name.toLowerCase(), untitledId]);
     if (isExistMedicinesResult[0].length > 0) {
         return error422(" Medicines Name  is already exists.", res);
     }
@@ -56,7 +63,7 @@ const addMedicines = async (req, res) => {
     try {
         //insert into medicines 
         const insertMedicinesQuery = `INSERT INTO medicines (medicines_name, content, dosage_id, instructions_id, untitled_id ) VALUES (?, ?, ?, ?, ? )`;
-        const insertMedicinesValues = [medicines_name, content, dosage_id, instructions_id, untitled_id];
+        const insertMedicinesValues = [medicines_name, content, dosage_id, instructions_id, untitledId];
         const medicinesResult = await pool.query(insertMedicinesQuery, insertMedicinesValues);
 
         res.status(200).json({
