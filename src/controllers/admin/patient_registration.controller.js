@@ -586,9 +586,8 @@ const getPatientRegistrationWma = async (req, res) => {
 };
 // get Patient Visit Lists ...
 const getPatientVisitLists = async (req, res) => {
-  const { page, perPage, key } = req.query;
+  const { page, perPage, key, visit_date } = req.query;
   const untitled_id = req.companyData.untitled_id;
-  const visit_date = new Date().toISOString().split("T")[0];
 
   const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
   const untitledResult = await pool.query(checkUntitledQuery);
@@ -600,14 +599,14 @@ const getPatientVisitLists = async (req, res) => {
     ON pr.mrno = p.mrno
     LEFT JOIN entity e
     ON e.entity_id = pr.entity_id
-    WHERE p.visit_date = '${visit_date}' AND p.is_checked = 0 AND pr.customer_id = ${customer_id}`;
+    WHERE p.is_checked = 0 AND pr.customer_id = ${customer_id}`;
 
     let countQuery = `SELECT COUNT(*) AS total  FROM patient_visit_list p 
     LEFT JOIN patient_registration pr 
     ON pr.mrno = p.mrno
     LEFT JOIN entity e
     ON e.entity_id = pr.entity_id
-    WHERE p.visit_date = '${visit_date}' AND p.is_checked = 0 AND pr.customer_id = ${customer_id}`;
+    WHERE p.is_checked = 0 AND pr.customer_id = ${customer_id}`;
 
     if (key) {
       const lowercaseKey = key.toLowerCase().trim();
@@ -621,6 +620,10 @@ const getPatientVisitLists = async (req, res) => {
         getPatientVisitListsQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
         countQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
       }
+    }
+    if (visit_date) {
+      getPatientVisitListsQuery += ` AND p.visit_date = '${visit_date}' `;
+      countQuery += ` AND p.visit_date = '${visit_date}' `;
     }
     getPatientVisitListsQuery += " ORDER BY p.mrno DESC";
     // Apply pagination if both page and perPage are provided
@@ -809,12 +812,11 @@ const generateMrnoEntitySeries = async (req, res) => {
   const patientRegistrationCount = await pool.query(getPatientCountQuery, [
     entityId,
   ]);
-
   let mrnoEntitySeries =
     entityResult[0][0].abbrivation +
-    "_" +
-    untitledExistResult[0][0].city +
-    "_" +
+    "/" +
+    untitledExistResult[0][0].city.split('')[0] +
+    "/" +
     (patientRegistrationCount[0].length + 1);
 
   let data = {
