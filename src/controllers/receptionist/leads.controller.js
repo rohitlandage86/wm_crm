@@ -17,14 +17,15 @@ error422 = (message, res) => {
 };
 //error 500 handler...
 error500 = (error, res) => {
-  return res.status(500).json({
+  res.status(500).json({
     status: 500,
     message: "Internal Server Error",
     error: error,
   });
+  res.send();
 };
 //add leads header...
-const addleads = async (req, res) => {
+const addleads = async (req, res, next) => {
   const lead_date = req.body.lead_date ? req.body.lead_date : "";
   const category_id = req.body.category_id ? req.body.category_id : "";
   const name = req.body.name ? req.body.name.trim() : "";
@@ -140,14 +141,15 @@ const addleads = async (req, res) => {
     // Commit the transaction
     await connection.commit();
 
-    return res.status(200).json({
+    res.status(200).json({
       status: 200,
       message: "Leads added successfully",
     });
+    res.end();
   } catch (error) {
     // Handle errors
     await connection.rollback();
-    return error500(error, res);
+    error500(error, res);
   } finally {
     await connection.release();
   }
@@ -243,7 +245,7 @@ const getLeadHeaders = async (req, res) => {
   }
 };
 // get leads Header by id...
-const getLeadsHeaderById = async (req, res) => {
+const getLeadsHeaderById = async (req, res, next) => {
   const leadheaderId = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
   const { page, perPage } = req.query;
@@ -298,14 +300,14 @@ const getLeadsHeaderById = async (req, res) => {
         last_page: Math.ceil(total / perPage),
       };
     }
-    return res.status(200).json(data);
+    res.status(200).json(data);
+    res.end();
   } catch (error) {
-    console.log(error);
-    return error500(error, res);
+    error500(error, res);
   }
 };
 //lead_header update...
-const updateLeads = async (req, res) => {
+const updateLeads = async (req, res, next) => {
   const leadId = parseInt(req.params.id);
   const lead_date = req.body.lead_date ? req.body.lead_date : "";
   const category_id = req.body.category_id ? req.body.category_id : "";
@@ -478,13 +480,14 @@ const updateLeads = async (req, res) => {
     }
 
     await connection.commit();
-    return res.status(200).json({
+    res.status(200).json({
       status: 200,
       message: "Leads updated successfully.",
     });
+    res.end();
   } catch (error) {
     await connection.rollback();
-    return error500(error, res);
+    error500(error, res);
   }
 };
 //status change of lead_header...
@@ -603,7 +606,7 @@ const deleteLeadFooter = async (req, res) => {
   }
 };
 // get follow Leads  list...
-const getFollowUpLeadsList = async (req, res) => {
+const getFollowUpLeadsList = async (req, res, next) => {
   const {
     page,
     perPage,
@@ -704,9 +707,10 @@ const getFollowUpLeadsList = async (req, res) => {
       };
     }
 
-    return res.status(200).json(data);
+    res.status(200).json(data);
+    res.end();
   } catch (error) {
-    return error500(error, res);
+    error500(error, res);
   }
 };
 const updateFollowUpLead = async (req, res) => {
@@ -822,7 +826,7 @@ const updateFollowUpLead = async (req, res) => {
   }
 };
 // search lead_headers list...
-const searchLeadHeaders = async (req, res) => {
+const searchLeadHeaders = async (req, res, next) => {
   const { page, perPage, key } = req.query;
   const untitled_id = req.companyData.untitled_id;
 
@@ -891,13 +895,14 @@ const searchLeadHeaders = async (req, res) => {
       };
     }
 
-    return res.status(200).json(data);
+    res.status(200).json(data);
+    res.end();
   } catch (error) {
-    return error500(error, res);
+    error500(error, res);
   }
 };
 //pending follow up lead list...
-const getPendingFollowUpLeadsList = async (req, res) => {
+const getPendingFollowUpLeadsList = async (req, res, next) => {
   const {
     page,
     perPage,
@@ -938,38 +943,6 @@ const getPendingFollowUpLeadsList = async (req, res) => {
       ON lh.lead_hid = lf.lead_hid
       WHERE (lh.customer_id = ${employeeDetails.customer_id} AND lf.isFollowUp = 0 AND lf.follow_up_date <= '${current_date}') OR lf.lead_status_id = 4 `;
 
-    // if (follow_up_date) {
-    //   getFollowUpQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
-    //   countQuery += ` AND lf.follow_up_date = '${follow_up_date}'`;
-    // }
-
-    // if (lead_date) {
-    //   getFollowUpQuery += ` AND lh.lead_date = '${lead_date}'`;
-    //   countQuery += ` AND lh.lead_date = '${lead_date}'`;
-    // }
-
-    // if (key) {
-    //   const lowercaseKey = key.toLowerCase().trim();
-    //   if (key === "activated") {
-    //     getFollowUpQuery += ` AND l.status = 1`;
-    //     countQuery += ` AND l.status = 1`;
-    //   } else if (key === "deactivated") {
-    //     getFollowUpQuery += ` AND l.status = 0`;
-    //     countQuery += ` AND l.status = 0`;
-    //   } else {
-    //     getFollowUpQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
-    //     countQuery += ` AND (LOWER(l.name ) LIKE '%${lowercaseKey}%' OR LOWER(l.mobile_number) LIKE '%${lowercaseKey}%' ) `;
-    //   }
-    // }
-    // if (fromDate&&toDate) {
-    //   getFollowUpQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;
-    //   countQuery += ` AND lf.follow_up_date >= '${fromDate}' AND lf.follow_up_date <= '${toDate}'`;
-    // }
-    // if (lead_status_id) {
-    //   getFollowUpQuery += ` AND lf.lead_status_id = '${lead_status_id}'`;
-    //   countQuery += ` AND lf.lead_status_id = '${lead_status_id}'`
-    // }
-
     getFollowUpQuery += " ORDER BY lf.lead_hid DESC";
     // Apply pagination if both page and perPage are provided
     let total = 0;
@@ -998,9 +971,10 @@ const getPendingFollowUpLeadsList = async (req, res) => {
       };
     }
 
-    return res.status(200).json(data);
+    res.status(200).json(data);
+    res.end();
   } catch (error) {
-    return error500(error, res);
+    error500(error, res);
   }
 };
 //lead follow up report page

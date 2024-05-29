@@ -20,11 +20,12 @@ error422 = (message, res) => {
 };
 //error 500 handler...
 error500 = (error, res) => {
-  return res.status(500).json({
+  res.status(500).json({
     status: 500,
     message: "Internal Server Error",
     error: error,
   });
+  res.end();
 };
 
 // add employee...
@@ -191,7 +192,7 @@ const getEmployees = async (req, res) => {
 };
 
 // get employee  by id...
-const getEmployee = async (req, res) => {
+const getEmployee = async (req, res, next) => {
   const employeeId = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
   const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
@@ -214,13 +215,14 @@ const getEmployee = async (req, res) => {
     }
     const employee = employeeResult[0][0];
 
-    return res.status(200).json({
+    res.status(200).json({
       status: 200,
       message: "Employee Retrived Successfully",
       data: employee,
     });
+    res.end();
   } catch (error) {
-    return error500(error, res);
+    error500(error, res);
   }
 };
 
@@ -360,7 +362,7 @@ const onStatusChange = async (req, res) => {
   }
 };
 //get employee active...
-const getEmployeeWma = async (req, res) => {
+const getEmployeeWma = async (req, res, next) => {
   const untitled_id = req.companyData.untitled_id;
 
   const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
@@ -382,13 +384,15 @@ const getEmployeeWma = async (req, res) => {
     const employeeResult = await pool.query(employeeQuery);
     const employee = employeeResult[0];
 
-    return res.status(200).json({
+    res.status(200).json({
       status: 200,
       message: "Employee retrieved successfully.",
       data: employee,
     });
+    res.end();
   } catch (error) {
-    return error500(error, res);
+    error500(error, res);
+    res.end();
   }
 };
 //Login employee...

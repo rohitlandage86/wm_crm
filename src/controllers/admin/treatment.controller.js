@@ -11,11 +11,12 @@ error422 = (message, res) => {
 }
 //error 500 handler...
 error500 = (error, res) => {
-    return res.status(500).json({
+    res.status(500).json({
         status: 500,
         message: "Internal Server Error",
         error: error
     });
+    res.end();
 }
 // add Treatment...
 const addTreatment = async (req, res) => {
@@ -236,7 +237,7 @@ const onStatusChange = async (req, res) => {
     }
 };
 //get treatment active...
-const getTreatmentWma = async (req, res) => {
+const getTreatmentWma = async (req, res, next) => {
     const untitled_id = req.companyData.untitled_id;
 
     const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
@@ -252,13 +253,14 @@ const getTreatmentWma = async (req, res) => {
         const treatmentResult = await pool.query(treatmentQuery);
         const treatments = treatmentResult[0];
 
-        return res.status(200).json({
+        res.status(200).json({
             status: 200,
             message: "Treatments retrieved successfully.",
             data: treatments,
         });
+        res.end();
     } catch (error) {
-        return error500(error, res);
+        error500(error, res);
     }
 
 }

@@ -18,11 +18,12 @@ error422 = (message, res) => {
 };
 //error 500 handler...
 error500 = (error, res) => {
-  return res.status(500).json({
+  res.status(500).json({
     status: 500,
     message: "Internal Server Error",
     error: error,
   });
+  res.end();
 };
 // add Patient Registration...
 const addPatientRegistration = async (req, res) => {
@@ -338,7 +339,7 @@ const getPatientRegistrations = async (req, res) => {
   }
 };
 // get patient_registration  by id...
-const getPatientRegistration = async (req, res) => {
+const getPatientRegistration = async (req, res, next) => {
   const mrno = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
 
@@ -379,13 +380,14 @@ const getPatientRegistration = async (req, res) => {
       return error422("Patient Not Found.", res);
     }
     const patient_registration = patientregistrationResult[0][0];
-    return res.status(200).json({
+    res.status(200).json({
       status: 200,
       message: "Patient  Retrived Successfully.",
       data: patient_registration,
     });
+    res.end();
   } catch (error) {
-    return error500(error, res);
+    error500(error, res);
   }
 };
 //patient_registration update...
@@ -585,7 +587,7 @@ const getPatientRegistrationWma = async (req, res) => {
   }
 };
 // get Patient Visit Lists ...
-const getPatientVisitLists = async (req, res) => {
+const getPatientVisitLists = async (req, res, next) => {
   const { page, perPage, key, visit_date } = req.query;
   const untitled_id = req.companyData.untitled_id;
 
@@ -654,9 +656,10 @@ const getPatientVisitLists = async (req, res) => {
       };
     }
 
-    return res.status(200).json(data);
+    res.status(200).json(data);
+    res.end();
   } catch (error) {
-    return error500(error, res);
+    error500(error, res);
   }
 };
 // get Patient Visit checked Lists ...
@@ -775,7 +778,7 @@ const patientRevisit = async (req, res) => {
     return error500(error, res);
   }
 };
-const generateMrnoEntitySeries = async (req, res) => {
+const generateMrnoEntitySeries = async (req, res, next) => {
   const entityId = parseInt(req.params.id);
   const untitled_id = req.companyData.untitled_id;
   //Check if untitled exists
@@ -824,7 +827,8 @@ const generateMrnoEntitySeries = async (req, res) => {
     message: "Generate mrno entity series successfully.",
     mrnoEntitySeries: mrnoEntitySeries,
   };
-  return res.json(data);
+  res.json(data);
+  res.end();
 };
 //search patient registration by mobile and patient
 const searchPatientRegistration = async (req, res) => {

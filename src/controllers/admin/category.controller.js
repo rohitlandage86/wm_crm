@@ -10,11 +10,12 @@ error422 = (message, res) => {
 
 //error 500 handler...
 error500 = (error, res) => {
-    return res.status(500).json({
+     res.send({
         status: 500,
         message: "Internal Server Error",
         error: error
     });
+   res.end();
 }
 
 // add Category...
@@ -231,28 +232,30 @@ const onStatusChange = async (req, res) => {
     }
 };
 
-const getCategoryWma = async (req, res) => {
+const getCategoryWma = async (req, res, next) => {
     const untitled_id = req.companyData.untitled_id;
     
     const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
     const untitledResult = await pool.query(checkUntitledQuery);
     const customer_id =  untitledResult[0][0].customer_id;
     const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
-    const customerResult = await pool.query(isCustomerQuery);
+    const customerResult =  await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
     
     let categoryQuery = `SELECT c.*  FROM category c LEFT JOIN untitled u ON u.untitled_id = c.untitled_id WHERE c.status = 1 AND u.category=2  AND c.untitled_id  = ${untitledId} ORDER BY c.category_name `;
     try {
-        const categoryResult = await pool.query(categoryQuery);
+        const categoryResult =  await pool.query(categoryQuery);
         const category = categoryResult[0];
 
-        return res.status(200).json({
+        res.send({
             status: 200,
             message: "Category retrieved successfully.",
             data: category,
-        });
+        })
+        res.end();
     } catch (error) {
-        return error500(error,res);
+         error500(error,res);
+        
     }
     
 }
