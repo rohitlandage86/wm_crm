@@ -9,11 +9,12 @@ error422 = (message, res) => {
 }
 //error 500 handler...
 error500 = (error, res) => {
-    return res.status(500).json({
+    res.status(500).json({
         status: 500,
         message: "Internal Server Error",
         error: error
     });
+    res.end();
 }
 // add Entity...
 const addEntity = async (req, res) => {
@@ -228,7 +229,7 @@ const onStatusChange = async (req, res) => {
     } 
 };
 //get entity active...
-const getEntityWma = async (req, res) => {
+const getEntityWma = async (req, res, next) => {
     const untitled_id = req.companyData.untitled_id;
 
     const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
@@ -243,13 +244,14 @@ const getEntityWma = async (req, res) => {
         const entityResult = await pool.query(entityQuery);
         const entitys = entityResult[0];
 
-        return res.status(200).json({
+        res.json({
             status: 200,
             message: "Entitys retrieved successfully.",
             data: entitys,
         });
+        res.end();
     } catch (error) {
-        return error500(error,res);
+        error500(error,res);
     }
     
 }

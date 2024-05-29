@@ -19,11 +19,12 @@ error422 = (message, res) => {
 };
 //error 500 handle...
 error500 = (err, res) => {
-  return res.status(500).json({
+   res.json({
     status: 500,
     message: "Internal Server Error",
     error: err,
   });
+  res.end();
 };
 //create super admin...
 const createSuperAdmin = async (req, res) => {
@@ -196,31 +197,33 @@ const login = async (req, res) => {
   }
 }
 //get alll lead status list
-const getAllLeadStatusList = async (req, res) => {
+const getAllLeadStatusList = async (req, res, next) => {
   try {
     const leadStatusQuery = "SELECT * FROM lead_status WHERE status = 1";
     const leadStatusResult = await pool.query(leadStatusQuery);
-    return res.status(200).json({
+    res.status(200).json({
       status: 200,
       message: "Lead status retrived successfully.",
       data: leadStatusResult[0]
-    })
+    });
+    res.end();
   } catch (error) {
-    return error500(error);
+    error500(error);
   }
 }
 //get all state list
-const getAllStateList = async (req, res) => {
+const getAllStateList = async (req, res, next) => {
   try {
     const stateQuery = "SELECT * FROM state WHERE status = 1";
     const stateResult = await pool.query(stateQuery);
-    return res.status(200).json({
+     res.json({
       status: 200,
       message: "State retrived successfully",
       data: stateResult[0]
     })
+    res.end()
   } catch (error) {
-    return error500(error, res);
+     error500(error, res);
   }
 }
 //------------------------multiple lead footer and lead header get and upload in database -------------------------------------//

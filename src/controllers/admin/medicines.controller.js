@@ -10,15 +10,16 @@ error422 = (message, res) => {
 
 //error 500 handler...
 error500 = (error, res) => {
-    return res.status(500).json({
+    res.status(500).json({
         status: 500,
         message: "Internal Server Error",
         error: error
     });
+    res.end();
 }
 
 // add medicines...
-const addMedicines = async (req, res) => {
+const addMedicines = async (req, res, next) => {
     const medicines_name = req.body.medicines_name ? req.body.medicines_name.trim() : '';
     const content = req.body.content ? req.body.content.trim() : '';
     const dosage_id = req.body.dosage_id ? req.body.dosage_id : null;
@@ -70,8 +71,9 @@ const addMedicines = async (req, res) => {
             status: 200,
             message: "Medicines added successfully",
         });
+        res.end();
     } catch (error) {
-        return error500(error, res);
+        error500(error, res);
     }
 }
 
@@ -300,7 +302,7 @@ const onStatusChange = async (req, res) => {
     }
 };
 //get medicines  active...
-const getMedicinesWma = async (req, res) => {
+const getMedicinesWma = async (req, res, next) => {
     const untitled_id = req.companyData.untitled_id;
 
     const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
@@ -322,13 +324,14 @@ const getMedicinesWma = async (req, res) => {
         const medicinesResult = await pool.query(medicinesQuery);
         const medicines = medicinesResult[0];
 
-        return res.status(200).json({
+        res.status(200).json({
             status: 200,
             message: "Medicines  retrieved successfully.",
             data: medicines,
         });
+        res.end();
     } catch (error) {
-        return error500(error, res);
+        error500(error, res);
     }
 
 }

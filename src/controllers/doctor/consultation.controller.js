@@ -19,11 +19,12 @@ error422 = (message, res) => {
 };
 //error 500 handler...
 error500 = (error, res) => {
-    return res.status(500).json({
+    res.status(500).json({
         status: 500,
         message: "Internal Server Error",
         error: error,
     });
+    res.end();
 };
 const createConsultation = async (req, res) => {
     const mrno = req.body.mrno ? req.body.mrno : '';
@@ -323,7 +324,7 @@ const createConsultation = async (req, res) => {
 }
 
 // get consultation list 
-const getConsultationList = async (req, res) => {
+const getConsultationList = async (req, res, next) => {
     const { page, perPage, key, current_day } = req.query;
     const untitled_id = req.companyData.untitled_id;
     //check if untitled exists 
@@ -394,14 +395,14 @@ const getConsultationList = async (req, res) => {
                 last_page: Math.ceil(total / perPage)
             };
         }
-        return res.json(data);
+        res.json(data);
+        res.end();
     } catch (error) {
-        console.log(error);
-        return error500(error, res);
+        error500(error, res);
     }
 }
 // get consultation by  id
-const getConsultationById = async (req, res) => {
+const getConsultationById = async (req, res, next) => {
     const consultationId = parseInt(req.params.id);
     const untitled_id = req.companyData.untitled_id;
 
@@ -533,10 +534,10 @@ const getConsultationById = async (req, res) => {
             data: consultations
         }
 
-        return res.json(data);
+        res.json(data);
+        res.end();
     } catch (error) {
-        console.log(error);
-        return error500(error, res);
+        error500(error, res);
     }
 }
 //update consultation 
@@ -1094,7 +1095,7 @@ const deleteConsultationFileUpload = async (req, res) => {
     }
 };
 // patient consultation  history list
-const getConsulationsByMrno = async (req, res) => {
+const getConsulationsByMrno = async (req, res, next) => {
     const { page, perPage, key } = req.query;
     const mrno = parseInt(req.params.id);
     const untitled_id = req.companyData.untitled_id;
@@ -1215,10 +1216,10 @@ const getConsulationsByMrno = async (req, res) => {
                 last_page: Math.ceil(total / perPage)
             };
         }
-        return res.json(data);
+        res.json(data);
+        res.end();
     } catch (error) {
-        console.log(error);
-        return error500(error, res);
+        error500(error, res);
     }
 }
 //Appointment list 
