@@ -428,11 +428,19 @@ const getConsultationById = async (req, res, next) => {
     }
 
     try {
-        let getConsultationQuery = `SELECT c.*, p.*, e.name AS employee_name FROM consultation c 
+        let getConsultationQuery = `SELECT c.*, p.*, e.name AS employee_name , et.entity_name, et.abbrivation, s.source_of_patient_name, r.refered_by_name, st.state_name FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
         LEFT JOIN employee e
         ON p.employee_id = e.employee_id
+        LEFT JOIN entity et
+        ON et.entity_id = p.entity_id
+        LEFT JOIN source_of_patient s
+        ON s.source_of_patient_id = p.source_of_patient_id
+        LEFT JOIN refered_by r
+        ON r.refered_by_id = p.refered_by_id
+        LEFT JOIN state st
+        ON st.state_id = p.state_id
         WHERE c.consultation_id = ${consultationId}`;
         const result = await pool.query(getConsultationQuery);
         let consultations = result[0][0];

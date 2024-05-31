@@ -360,7 +360,7 @@ const getPatientRegistration = async (req, res, next) => {
     return error422("MRNO is required.", res);
   }
   try {
-    const patientregistrationQuery = `SELECT p.*, u.untitled_id, e.entity_name, e.abbrivation, s.source_of_patient_name, em.name, r.refered_by_name  FROM  patient_registration p
+    const patientregistrationQuery = `SELECT p.*, u.untitled_id, e.entity_name, e.abbrivation, s.source_of_patient_name, em.name, r.refered_by_name, st.state_name  FROM  patient_registration p
         LEFT JOIN untitled u 
         ON p.untitled_id = u.untitled_id
         LEFT JOIN entity e
@@ -371,6 +371,8 @@ const getPatientRegistration = async (req, res, next) => {
         ON em.employee_id = p.employee_id
         LEFT JOIN refered_by r
         ON r.refered_by_id = p.refered_by_id
+        LEFT JOIN state st
+        ON st.state_id = p.state_id
         WHERE p.mrno = ? AND p.customer_id = ?`;
     const patientregistrationResult = await pool.query(
       patientregistrationQuery,
