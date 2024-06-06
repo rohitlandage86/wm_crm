@@ -1012,6 +1012,9 @@ const searchPatientForRevisit = async (req, res) => {
     return error422("Search Key is required", res);
   }
   try {
+
+    const lowercaseKey = key.toLowerCase().trim();
+    
     let getPatientHistoryQuery = `SELECT p.*, ph.cts AS patient_history_cts, e.entity_name, e.abbrivation, 
     CASE
     WHEN ph.cts >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH) THEN 1
@@ -1030,8 +1033,8 @@ const searchPatientForRevisit = async (req, res) => {
     ON e.entity_id = p.entity_id
     WHERE p.customer_id = ${customer_id} AND (ph.service_id = 0 OR ph.service_id IS NULL) AND isRenew = 0 `;
 
-    getPatientHistoryQuery += ` AND (p.mobile_no = '${key}' ) `;
-    countQuery += ` AND (p.mobile_no = '${key}') `;
+    getPatientHistoryQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
+    countQuery += ` AND (p.mobile_no LIKE '%${lowercaseKey}%' OR LOWER(p.patient_name) LIKE '%${lowercaseKey}%' ) `;
     getPatientHistoryQuery += " ORDER BY ph.cts DESC";
     // Apply pagination if both page and perPage are provided
     let total = 0;
