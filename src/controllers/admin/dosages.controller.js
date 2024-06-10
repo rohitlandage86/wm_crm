@@ -259,6 +259,8 @@ const getDosagesWma = async (req, res, next) => {
         res.end();
     } catch (error) {
         error500(error,res);
+    } finally {
+        pool.releaseConnection();
     }
     
 }

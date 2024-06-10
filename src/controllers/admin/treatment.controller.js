@@ -54,6 +54,10 @@ const addTreatment = async (req, res) => {
         });
     } catch (error) {
         return error500(error, res);
+    } finally {
+        if (pool) {
+            pool.releaseConnection();
+        }
     }
 }
 
@@ -261,6 +265,8 @@ const getTreatmentWma = async (req, res, next) => {
         res.end();
     } catch (error) {
         error500(error, res);
+    } finally {
+        pool.releaseConnection();
     }
 
 }
