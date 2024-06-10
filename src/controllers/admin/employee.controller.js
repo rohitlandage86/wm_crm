@@ -223,6 +223,10 @@ const getEmployee = async (req, res, next) => {
     res.end();
   } catch (error) {
     error500(error, res);
+  } finally {
+    if (pool) {
+      pool.releaseConnection();
+    }
   }
 };
 
@@ -393,6 +397,10 @@ const getEmployeeWma = async (req, res, next) => {
   } catch (error) {
     error500(error, res);
     res.end();
+  } finally {
+    if (pool) {
+      pool.releaseConnection();
+    }
   }
 };
 //Login employee...

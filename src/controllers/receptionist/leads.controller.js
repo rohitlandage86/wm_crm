@@ -151,7 +151,7 @@ const addleads = async (req, res, next) => {
     await connection.rollback();
     error500(error, res);
   } finally {
-    await connection.release();
+     connection.release();
   }
 };
 // get lead_headers list...
@@ -304,6 +304,10 @@ const getLeadsHeaderById = async (req, res, next) => {
     res.end();
   } catch (error) {
     error500(error, res);
+  } finally {
+    if (pool) {
+      pool.releaseConnection();
+    }
   }
 };
 //lead_header update...
@@ -488,6 +492,8 @@ const updateLeads = async (req, res, next) => {
   } catch (error) {
     await connection.rollback();
     error500(error, res);
+  } finally {
+    pool.releaseConnection();
   }
 };
 //status change of lead_header...
@@ -711,6 +717,8 @@ const getFollowUpLeadsList = async (req, res, next) => {
     res.end();
   } catch (error) {
     error500(error, res);
+  } finally {
+    pool.releaseConnection();
   }
 };
 const updateFollowUpLead = async (req, res) => {
@@ -899,6 +907,10 @@ const searchLeadHeaders = async (req, res, next) => {
     res.end();
   } catch (error) {
     error500(error, res);
+  } finally {
+    if (pool) {
+      pool.releaseConnection();
+    }
   }
 };
 //pending follow up lead list...
@@ -975,6 +987,8 @@ const getPendingFollowUpLeadsList = async (req, res, next) => {
     res.end();
   } catch (error) {
     error500(error, res);
+  } finally {
+    pool.releaseConnection();
   }
 };
 //lead follow up report page

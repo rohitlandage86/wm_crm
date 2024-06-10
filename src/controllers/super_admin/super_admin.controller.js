@@ -209,6 +209,10 @@ const getAllLeadStatusList = async (req, res, next) => {
     res.end();
   } catch (error) {
     error500(error);
+  } finally {
+    if (pool) {
+      pool.releaseConnection();
+    }
   }
 }
 //get all state list
@@ -221,9 +225,13 @@ const getAllStateList = async (req, res, next) => {
       message: "State retrived successfully",
       data: stateResult[0]
     })
-    res.end()
+    res.end();
   } catch (error) {
      error500(error, res);
+  } finally {
+    if (pool) {
+      pool.releaseConnection();
+    }
   }
 }
 //------------------------multiple lead footer and lead header get and upload in database -------------------------------------//

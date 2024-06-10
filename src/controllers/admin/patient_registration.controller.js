@@ -209,6 +209,10 @@ const addPatientRegistration = async (req, res) => {
     });
   } catch (error) {
     return error500(error, res);
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 // get patient_registrations list...
@@ -390,6 +394,8 @@ const getPatientRegistration = async (req, res, next) => {
     res.end();
   } catch (error) {
     error500(error, res);
+  } finally {
+    pool.releaseConnection();
   }
 };
 //patient_registration update...
@@ -662,6 +668,8 @@ const getPatientVisitLists = async (req, res, next) => {
     res.end();
   } catch (error) {
     error500(error, res);
+  } finally {
+    pool.releaseConnection();
   }
 };
 // get Patient Visit checked Lists ...
@@ -797,40 +805,47 @@ const generateMrnoEntitySeries = async (req, res, next) => {
     return error422("Customer ID is required.", res);
   }
 
-  // get customer untitled id for check  entity_id is exist
-  const isCustomerUntitledQuery =
-    "SELECT * FROM untitled WHERE  customer_id = ? AND category = 2";
-  const customerUntitledResut = await pool.query(isCustomerUntitledQuery, [
-    customer_id,
-  ]);
-  const customerUntitledId = customerUntitledResut[0][0].untitled_id;
+  try {
+    // get customer untitled id for check  entity_id is exist
+    const isCustomerUntitledQuery =
+      "SELECT * FROM untitled WHERE  customer_id = ? AND category = 2";
+    const customerUntitledResut = await pool.query(isCustomerUntitledQuery, [
+      customer_id,
+    ]);
+    const customerUntitledId = customerUntitledResut[0][0].untitled_id;
 
-  //check entity is exsist
-  const isExistEntityQuery = `SELECT * FROM entity WHERE entity_id = ${entityId} AND untitled_id = ${customerUntitledId}`;
-  const entityResult = await pool.query(isExistEntityQuery);
-  if (entityResult[0].length == 0) {
-    return error422("Entity Not Found.", res);
+    //check entity is exsist
+    const isExistEntityQuery = `SELECT * FROM entity WHERE entity_id = ${entityId} AND untitled_id = ${customerUntitledId}`;
+    const entityResult = await pool.query(isExistEntityQuery);
+    if (entityResult[0].length == 0) {
+      return error422("Entity Not Found.", res);
+    }
+    //get patient total count
+    const getPatientCountQuery =
+      "SELECT * FROM patient_registration WHERE entity_id = ?";
+    const patientRegistrationCount = await pool.query(getPatientCountQuery, [
+      entityId,
+    ]);
+    let mrnoEntitySeries =
+      entityResult[0][0].abbrivation +
+      "/" +
+      untitledExistResult[0][0].city.split('')[0] +
+      "/" +
+      (patientRegistrationCount[0].length + 1);
+
+    let data = {
+      status: 200,
+      message: "Generate mrno entity series successfully.",
+      mrnoEntitySeries: mrnoEntitySeries,
+    };
+    res.json(data);
+    res.end();
+
+  } catch (error) {
+    return error500(error, res);
+  } finally {
+    pool.releaseConnection();
   }
-  //get patient total count
-  const getPatientCountQuery =
-    "SELECT * FROM patient_registration WHERE entity_id = ?";
-  const patientRegistrationCount = await pool.query(getPatientCountQuery, [
-    entityId,
-  ]);
-  let mrnoEntitySeries =
-    entityResult[0][0].abbrivation +
-    "/" +
-    untitledExistResult[0][0].city.split('')[0] +
-    "/" +
-    (patientRegistrationCount[0].length + 1);
-
-  let data = {
-    status: 200,
-    message: "Generate mrno entity series successfully.",
-    mrnoEntitySeries: mrnoEntitySeries,
-  };
-  res.json(data);
-  res.end();
 };
 //search patient registration by mobile and patient
 const searchPatientRegistration = async (req, res) => {
@@ -1014,7 +1029,7 @@ const searchPatientForRevisit = async (req, res) => {
   try {
 
     const lowercaseKey = key.toLowerCase().trim();
-    
+
     let getPatientHistoryQuery = `SELECT p.*, ph.cts AS patient_history_cts, e.entity_name, e.abbrivation, 
     CASE
     WHEN ph.cts >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH) THEN 1

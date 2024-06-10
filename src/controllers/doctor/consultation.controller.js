@@ -320,6 +320,10 @@ const createConsultation = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 }
 
@@ -399,6 +403,10 @@ const getConsultationList = async (req, res, next) => {
         res.end();
     } catch (error) {
         error500(error, res);
+    } finally {
+        if (pool) {
+            pool.releaseConnection();
+        }
     }
 }
 // get consultation by  id
@@ -546,6 +554,10 @@ const getConsultationById = async (req, res, next) => {
         res.end();
     } catch (error) {
         error500(error, res);
+    } finally {
+        if (pool) {
+            pool.releaseConnection();
+        }
     }
 }
 //update consultation 
@@ -911,6 +923,10 @@ const updateConsultation = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 
 }
@@ -1228,6 +1244,10 @@ const getConsulationsByMrno = async (req, res, next) => {
         res.end();
     } catch (error) {
         error500(error, res);
+    } finally {
+        if (pool) {
+            pool.releaseConnection();
+        }
     }
 }
 //Appointment list 
