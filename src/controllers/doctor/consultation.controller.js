@@ -19,12 +19,11 @@ error422 = (message, res) => {
 };
 //error 500 handler...
 error500 = (error, res) => {
-    res.status(500).json({
+    return res.status(500).json({
         status: 500,
         message: "Internal Server Error",
         error: error,
     });
-    res.end();
 };
 const createConsultation = async (req, res) => {
     const mrno = req.body.mrno ? req.body.mrno : '';
@@ -69,7 +68,7 @@ const createConsultation = async (req, res) => {
 
     // if  consultation diagnosis details
     if (consultationDiagnosisDetails) {
-        if (!consultationDiagnosisDetails || !Array.isArray(consultationDiagnosisDetails) || consultationDiagnosisDetails.length === 0) {
+        if (!consultationDiagnosisDetails || !Array.isArray(consultationDiagnosisDetails) ) {
             return error422("invalid consultation diagnosis Details data.", res);
         }
         //check duplicate diagnosis id 
@@ -89,7 +88,7 @@ const createConsultation = async (req, res) => {
 
     //if consultation  treatment details
     if (consultationTreatmentDetails) {
-        if (!consultationTreatmentDetails || !Array.isArray(consultationTreatmentDetails) || consultationTreatmentDetails.length === 0) {
+        if (!consultationTreatmentDetails || !Array.isArray(consultationTreatmentDetails) ) {
             return error422("invalid consultation Treatment Details data.", res);
         }
         //check duplicate treatment id 
@@ -185,16 +184,17 @@ const createConsultation = async (req, res) => {
             for (const row of consultationDiagnosisDetails) {
                 const diagnosis_id = row.diagnosis_id;
                 const notes = row.notes;
-
-                try {
-                    //insert  into consultation diagnosis  table...
-                    const insertConsultationDiagnosisQuery = "INSERT INTO consultation_diagnosis (diagnosis_id, notes,consultation_id) VALUES (?, ?,?)";
-                    const insertConsultationDiagnosisValues = [diagnosis_id, notes, consultation_id];
-                    const insertConsultationDiagnosisResult = await connection.query(insertConsultationDiagnosisQuery, insertConsultationDiagnosisValues);
-                } catch (error) {
-                    // Handle errors
-                    await connection.rollback();
-                    return error500(error, res);
+                if (diagnosis_id) {
+                    try {
+                        //insert  into consultation diagnosis  table...
+                        const insertConsultationDiagnosisQuery = "INSERT INTO consultation_diagnosis (diagnosis_id, notes,consultation_id) VALUES (?, ?,?)";
+                        const insertConsultationDiagnosisValues = [diagnosis_id, notes, consultation_id];
+                        const insertConsultationDiagnosisResult = await connection.query(insertConsultationDiagnosisQuery, insertConsultationDiagnosisValues);
+                    } catch (error) {
+                        // Handle errors
+                        await connection.rollback();
+                        return error500(error, res);
+                    }
                 }
             }
         }
@@ -205,15 +205,17 @@ const createConsultation = async (req, res) => {
                 const treatment_id = row.treatment_id;
                 const notes = row.notes;
 
-                try {
-                    //insert  into consultation treatment  table...
-                    const insertConsultationTreatmentQuery = "INSERT INTO consultation_treatment_advice (treatment_id, notes,consultation_id) VALUES (?, ?,?)";
-                    const insertConsultationTreatmentValues = [treatment_id, notes, consultation_id];
-                    const insertConsultationTreatmentResult = await connection.query(insertConsultationTreatmentQuery, insertConsultationTreatmentValues);
-                } catch (error) {
-                    // Handle errors
-                    await connection.rollback();
-                    return error500(error, res);
+                if (treatment_id) {
+                    try {
+                        //insert  into consultation treatment  table...
+                        const insertConsultationTreatmentQuery = "INSERT INTO consultation_treatment_advice (treatment_id, notes,consultation_id) VALUES (?, ?,?)";
+                        const insertConsultationTreatmentValues = [treatment_id, notes, consultation_id];
+                        const insertConsultationTreatmentResult = await connection.query(insertConsultationTreatmentQuery, insertConsultationTreatmentValues);
+                    } catch (error) {
+                        // Handle errors
+                        await connection.rollback();
+                        return error500(error, res);
+                    }
                 }
             }
         }
@@ -320,15 +322,11 @@ const createConsultation = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
-    } finally {
-        if (connection) {
-            connection.release();
-        }
     }
 }
 
 // get consultation list 
-const getConsultationList = async (req, res, next) => {
+const getConsultationList = async (req, res) => {
     const { page, perPage, key, current_day } = req.query;
     const untitled_id = req.companyData.untitled_id;
     //check if untitled exists 
@@ -399,18 +397,14 @@ const getConsultationList = async (req, res, next) => {
                 last_page: Math.ceil(total / perPage)
             };
         }
-        res.json(data);
-        res.end();
+        return res.json(data);
     } catch (error) {
-        error500(error, res);
-    } finally {
-        if (pool) {
-            pool.releaseConnection();
-        }
+        console.log(error);
+        return error500(error, res);
     }
 }
 // get consultation by  id
-const getConsultationById = async (req, res, next) => {
+const getConsultationById = async (req, res) => {
     const consultationId = parseInt(req.params.id);
     const untitled_id = req.companyData.untitled_id;
 
@@ -436,19 +430,11 @@ const getConsultationById = async (req, res, next) => {
     }
 
     try {
-        let getConsultationQuery = `SELECT c.*, p.*, e.name AS employee_name , et.entity_name, et.abbrivation, s.source_of_patient_name, r.refered_by_name, st.state_name FROM consultation c 
+        let getConsultationQuery = `SELECT c.*, p.*, e.name AS employee_name FROM consultation c 
         LEFT JOIN patient_registration p 
         ON p.mrno = c.mrno
         LEFT JOIN employee e
         ON p.employee_id = e.employee_id
-        LEFT JOIN entity et
-        ON et.entity_id = p.entity_id
-        LEFT JOIN source_of_patient s
-        ON s.source_of_patient_id = p.source_of_patient_id
-        LEFT JOIN refered_by r
-        ON r.refered_by_id = p.refered_by_id
-        LEFT JOIN state st
-        ON st.state_id = p.state_id
         WHERE c.consultation_id = ${consultationId}`;
         const result = await pool.query(getConsultationQuery);
         let consultations = result[0][0];
@@ -550,14 +536,10 @@ const getConsultationById = async (req, res, next) => {
             data: consultations
         }
 
-        res.json(data);
-        res.end();
+        return res.json(data);
     } catch (error) {
-        error500(error, res);
-    } finally {
-        if (pool) {
-            pool.releaseConnection();
-        }
+        console.log(error);
+        return error500(error, res);
     }
 }
 //update consultation 
@@ -604,7 +586,7 @@ const updateConsultation = async (req, res) => {
     }
     // if  consultation diagnosis details
     if (consultationDiagnosisDetails) {
-        if (!consultationDiagnosisDetails || !Array.isArray(consultationDiagnosisDetails) || consultationDiagnosisDetails.length === 0) {
+        if (!consultationDiagnosisDetails || !Array.isArray(consultationDiagnosisDetails) ) {
             return error422("invalid consultation diagnosis Details data.", res);
         }
         //check duplicate diagnosis id 
@@ -624,7 +606,7 @@ const updateConsultation = async (req, res) => {
 
     //if consultation  treatment details
     if (consultationTreatmentDetails) {
-        if (!consultationTreatmentDetails || !Array.isArray(consultationTreatmentDetails) || consultationTreatmentDetails.length === 0) {
+        if (!consultationTreatmentDetails || !Array.isArray(consultationTreatmentDetails) ) {
             return error422("invalid consultation Treatment Details data.", res);
         }
         //check duplicate treatment id 
@@ -725,7 +707,8 @@ const updateConsultation = async (req, res) => {
                 const notes = row.notes;
                 const consultation_diagnosis_id = row.consultation_diagnosis_id;
 
-                // Check if consultation diagnosis exists
+                if (diagnosis_id) {
+                                    // Check if consultation diagnosis exists
                 const consultationDiagnosisQuery = "SELECT * FROM consultation_diagnosis WHERE consultation_diagnosis_id = ?";
                 const consultationDiagnosisResult = await connection.query(consultationDiagnosisQuery, [consultation_diagnosis_id]);
 
@@ -748,6 +731,7 @@ const updateConsultation = async (req, res) => {
                     const insertConsultationDiagnosisValues = [diagnosis_id, notes, consultationId];
                     const insertConsultationDiagnosisResult = await connection.query(insertConsultationDiagnosisQuery, insertConsultationDiagnosisValues);
                 }
+                }
             }
         }
 
@@ -758,7 +742,8 @@ const updateConsultation = async (req, res) => {
                 const notes = row.notes;
                 const consultation_treatment_id = row.consultation_treatment_id;
 
-                // Check if consultation treatment exists
+                if (treatment_id) {
+                                    // Check if consultation treatment exists
                 const consultationTreatmentQuery = "SELECT * FROM consultation_treatment_advice WHERE consultation_treatment_id = ?";
                 const consultationTreatmentResult = await connection.query(consultationTreatmentQuery, [consultation_treatment_id]);
 
@@ -780,6 +765,7 @@ const updateConsultation = async (req, res) => {
                     const insertConsultationTreatmentQuery = "INSERT INTO consultation_treatment_advice (treatment_id, notes,consultation_id) VALUES (?, ?,?)";
                     const insertConsultationTreatmentValues = [treatment_id, notes, consultationId];
                     const insertConsultationTreatmentResult = await connection.query(insertConsultationTreatmentQuery, insertConsultationTreatmentValues);
+                }
                 }
             }
         }
@@ -923,10 +909,6 @@ const updateConsultation = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
-    } finally {
-        if (connection) {
-            connection.release();
-        }
     }
 
 }
@@ -1119,7 +1101,7 @@ const deleteConsultationFileUpload = async (req, res) => {
     }
 };
 // patient consultation  history list
-const getConsulationsByMrno = async (req, res, next) => {
+const getConsulationsByMrno = async (req, res) => {
     const { page, perPage, key } = req.query;
     const mrno = parseInt(req.params.id);
     const untitled_id = req.companyData.untitled_id;
@@ -1240,14 +1222,10 @@ const getConsulationsByMrno = async (req, res, next) => {
                 last_page: Math.ceil(total / perPage)
             };
         }
-        res.json(data);
-        res.end();
+        return res.json(data);
     } catch (error) {
-        error500(error, res);
-    } finally {
-        if (pool) {
-            pool.releaseConnection();
-        }
+        console.log(error);
+        return error500(error, res);
     }
 }
 //Appointment list 
