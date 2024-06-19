@@ -220,14 +220,14 @@ const getAllStateList = async (req, res, next) => {
   try {
     const stateQuery = "SELECT * FROM state WHERE status = 1";
     const stateResult = await pool.query(stateQuery);
-     res.json({
+    res.json({
       status: 200,
       message: "State retrived successfully",
       data: stateResult[0]
     })
     res.end();
   } catch (error) {
-     error500(error, res);
+    error500(error, res);
   } finally {
     if (pool) {
       pool.releaseConnection();
@@ -303,13 +303,20 @@ const leadUpload = async (req, res) => {
   }
 }
 // ----------------------- single footer and lead header get and upload in database------------------------------------//
-const getLeadOPDList = async (req, res)=>{
+const getLeadOPDList = async (req, res) => {
+  //sangli 
+  // nirmitisangli_tbl_inquiry_header
+  // nirmitisangli_tbl_inquiry_footer
+  //kolhapur
+  // nirmitikolhapur_tbl_inquiry_header
+  // nirmitikolhapur_tbl_inquiry_footer
   try {
     const query = `WITH RankedData AS (
       SELECT 
           h.inquiry_id,
           h.inquiry_date,
           h.inquiry_type_id,
+          h.inquiry_cat_name,
           h.name,
           h.city,
           h.mobile,
@@ -328,13 +335,14 @@ const getLeadOPDList = async (req, res)=>{
       ON 
           f.inquiry_id = h.inquiry_id
       WHERE 
-          f.follow_up_date > '2024-04-01' AND f.status='Follow Up'
+          f.follow_up_date > '2024-01-01' AND f.status='Follow Up'
   )
   
   SELECT 
       inquiry_id,
       inquiry_date,
       inquiry_type_id,
+      inquiry_cat_name,
       name,
       city,
       mobile,
@@ -359,7 +367,7 @@ const getLeadOPDList = async (req, res)=>{
     return error500(error, res);
   }
 }
-const wmLeadUpload = async (req, res)=>{
+const wmLeadUpload = async (req, res) => {
   const { leadData } = req.body;
 
   if (!leadData) {
@@ -371,14 +379,19 @@ const wmLeadUpload = async (req, res)=>{
   try {
     for (let index = 0; index < leadData.length; index++) {
       const element = leadData[index];
+      let category_name = '';
+      category_name = element.inquiry_cat_name.trim().toLowerCase();
+
+      let getCategoryQuery = `SELECT * FROM category WHERE LOWER(TRIM( category_name )) = '${category_name}' `;
+      let getCategoryResult = await connection.query(getCategoryQuery);
       let insertQuery = `INSERT INTO lead_header ( lead_date, category_id, name, city, mobile_number, note, customer_id, untitled_id) VALUES
        (?, ?, ?, ?, ?, ?, ?, ?)`;
-      let insertValue = [element.inquiry_date, element.inquiry_type_id, element.name, element.city, element.mobile, element.inquiry_description, 4, 7]
+      let insertValue = [element.inquiry_date, getCategoryResult[0][0].category_id, element.name, element.city, element.mobile, element.inquiry_description, 4, 7]
       let LeadResult = await connection.query(insertQuery, insertValue);
       let insertFooterQuery = `INSERT INTO lead_footer ( lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id) VALUES
       (?, ?, ?, ?, ?, ?)`;
-        let insertFooterValue = [LeadResult[0].insertId, element.comment_by_receptionist, element.follow_up_date, element.ftime, element.no_of_call, 1]
-        await connection.query(insertFooterQuery, insertFooterValue);
+      let insertFooterValue = [LeadResult[0].insertId, element.comment_by_receptionist, element.follow_up_date, element.ftime, element.no_of_call, 1]
+      await connection.query(insertFooterQuery, insertFooterValue);
 
     }
     //commit the  transaction
@@ -388,6 +401,7 @@ const wmLeadUpload = async (req, res)=>{
     })
   } catch (error) {
     // Handle errors
+    console.log(error);
     await connection.rollback();
     return error500(error, res);
   }

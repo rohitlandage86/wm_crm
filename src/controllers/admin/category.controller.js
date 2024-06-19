@@ -31,8 +31,8 @@ const addCategory = async (req, res) => {
     }
 
     //check category already is exists or not
-    const isExistCategoryQuery = `SELECT * FROM category WHERE LOWER(TRIM(category_name))= ? AND untitled_id = ?`;
-    const isExistCategoryResult = await pool.query(isExistCategoryQuery, [ category_name.toLowerCase(), untitled_id]);
+    const isExistCategoryQuery = `SELECT * FROM category WHERE LOWER(TRIM(category_name))= ?`;
+    const isExistCategoryResult = await pool.query(isExistCategoryQuery, [ category_name.toLowerCase()]);
     if (isExistCategoryResult[0].length > 0) {
         return error422(" Category Name is already exists.", res);
     } 
@@ -60,12 +60,12 @@ const getCategorys = async (req, res) => {
         let getCategoryQuery = `SELECT c.*, u.untitled_id  FROM category c
         LEFT JOIN untitled u 
         ON c.untitled_id = u.untitled_id
-        WHERE c.untitled_id = ${untitled_id}`;
+        `;
 
         let countQuery = `SELECT COUNT(*) AS total FROM category c
         LEFT JOIN untitled u
         ON c.untitled_id = u.untitled_id
-        WHERE c.untitled_id = ${untitled_id}`;
+        `;
         
         if (key) {
             const lowercaseKey = key.toLowerCase().trim();
@@ -122,8 +122,8 @@ const getCategory = async (req, res) => {
         const categoryQuery = `SELECT c.*, u.untitled_id  FROM  category c
         LEFT JOIN untitled u 
         ON c.untitled_id = u.untitled_id
-        WHERE c.category_id  = ? AND c.untitled_id = ?`;
-        const categoryResult = await pool.query(categoryQuery, [categoryId, untitled_id]);
+        WHERE c.category_id  = ? `;
+        const categoryResult = await pool.query(categoryQuery, [categoryId]);
         
         if (categoryResult[0].length == 0) {
             return error422("Category Not Found.", res);
@@ -157,14 +157,14 @@ const updateCategory = async (req, res) => {
 
     try {
         // Check if category exists
-        const categoryQuery = "SELECT * FROM category WHERE category_id  = ? AND untitled_id = ?";
-        const categoryResult = await pool.query(categoryQuery, [categoryId, untitled_id]);
+        const categoryQuery = "SELECT * FROM category WHERE category_id  = ?";
+        const categoryResult = await pool.query(categoryQuery, [categoryId]);
         if (categoryResult[0].length == 0) {
             return error422("Category Not Found.", res);
         }
         // Check if the provided category exists and is active 
-        const existingCategoryQuery = "SELECT * FROM category WHERE LOWER(TRIM( category_name )) = ? AND category_id!=? AND untitled_id = ?";
-        const existingCategoryResult = await pool.query(existingCategoryQuery, [category_name.trim().toLowerCase(), categoryId, untitled_id]);
+        const existingCategoryQuery = "SELECT * FROM category WHERE LOWER(TRIM( category_name )) = ? AND category_id!=?";
+        const existingCategoryResult = await pool.query(existingCategoryQuery, [category_name.trim().toLowerCase(), categoryId]);
 
         if (existingCategoryResult[0].length > 0) {
             return error422("Category name already exists.", res);
@@ -195,8 +195,8 @@ const onStatusChange = async (req, res) => {
 
     try {
         // Check if the category  exists
-        const categoryQuery = "SELECT * FROM category WHERE category_id = ? AND untitled_id = ?";
-        const categoryResult = await pool.query(categoryQuery, [categoryId, untitled_id]);
+        const categoryQuery = "SELECT * FROM category WHERE category_id = ? ";
+        const categoryResult = await pool.query(categoryQuery, [categoryId]);
 
         if (categoryResult[0].length == 0) {
             return res.status(404).json({
@@ -242,7 +242,7 @@ const getCategoryWma = async (req, res, next) => {
     const customerResult =  await pool.query(isCustomerQuery);
     const untitledId =  customerResult[0][0].untitled_id;
     
-    let categoryQuery = `SELECT c.*  FROM category c LEFT JOIN untitled u ON u.untitled_id = c.untitled_id WHERE c.status = 1 AND u.category=2  AND c.untitled_id  = ${untitledId} ORDER BY c.category_name `;
+    let categoryQuery = `SELECT c.*  FROM category c LEFT JOIN untitled u ON u.untitled_id = c.untitled_id WHERE c.status = 1 AND u.category=2  ORDER BY c.category_name `;
     try {
         const categoryResult =  await pool.query(categoryQuery);
         const category = categoryResult[0];
