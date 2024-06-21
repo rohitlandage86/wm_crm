@@ -616,7 +616,7 @@ const getPatientVisitLists = async (req, res, next) => {
     ON pr.mrno = p.mrno
     LEFT JOIN entity e
     ON e.entity_id = pr.entity_id
-    WHERE p.is_checked = 0 AND pr.customer_id = ${customer_id}`;
+    WHERE p.is_checked = 0 AND pr.customer_id = ${customer_id} `;
 
     if (key) {
       const lowercaseKey = key.toLowerCase().trim();
@@ -627,8 +627,8 @@ const getPatientVisitLists = async (req, res, next) => {
         getPatientVisitListsQuery += ` AND p.status = 0`;
         countQuery += ` AND p.status = 0`;
       } else {
-        getPatientVisitListsQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
-        countQuery += ` AND  LOWER(p.visit_date) LIKE '%${lowercaseKey}%' `;
+        getPatientVisitListsQuery += ` AND  (LOWER(p.visit_date) LIKE '%${lowercaseKey}%' OR (pr.mobile_no LIKE '%${lowercaseKey}%') OR LOWER(pr.patient_name) LIKE '%${lowercaseKey}%') `;
+        countQuery += ` AND  (LOWER(p.visit_date) LIKE '%${lowercaseKey}%' OR (pr.mobile_no LIKE '%${lowercaseKey}%' ) OR LOWER(pr.patient_name) LIKE '%${lowercaseKey}%' ) `;
       }
     }
     if (visit_date) {
