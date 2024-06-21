@@ -790,7 +790,7 @@ const updateFollowUpLead = async (req, res) => {
         const calling_time = row.calling_time;
         const no_of_calls = row.no_of_calls;
         const lead_status_id = row.lead_status_id;
-        const follow_up_date = row.follow_up_date;
+        let follow_up_date = row.follow_up_date;
 
         // Check if lead footer exists
         const leadfooterQuery = "SELECT * FROM lead_footer WHERE lead_fid = ?";
@@ -811,8 +811,13 @@ const updateFollowUpLead = async (req, res) => {
           }
         } else {
           let isFollowUp = 0;
-          if (lead_status_id == 3 || lead_status_id == "3") {
+          if (lead_status_id == 3 || lead_status_id == "3"||lead_status_id == 5 || lead_status_id == "5") {
             isFollowUp = 1;
+            const nowDate = new Date().toISOString().split("T")[0];
+            if ((!follow_up_date)||"NaN-aN-aN")  {
+              follow_up_date = nowDate
+            }
+
           }
           //insert lead header id  and lead footer id  table...
           const insertLeadFooterQuery = "INSERT INTO lead_footer (lead_hid, comments, follow_up_date, calling_time, no_of_calls, lead_status_id, isFollowUp ) VALUES (?, ?, ?, ?, ?, ?, ?)";
