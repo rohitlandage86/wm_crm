@@ -118,7 +118,15 @@ const addleads = async (req, res, next) => {
         const calling_time = row.calling_time;
         const no_of_calls = row.no_of_calls;
         const lead_status_id = row.lead_status_id;
-        const follow_up_date = row.follow_up_date;
+        let follow_up_date = row.follow_up_date;
+
+        if (lead_status_id == 3 || lead_status_id == "3"||lead_status_id == 5 || lead_status_id == "5") {
+          const nowDate = new Date().toISOString().split("T")[0];
+          if ((!follow_up_date)||"NaN-aN-aN")  {
+            follow_up_date = nowDate
+          }
+
+        }
 
         //insert  into lead footer  table...
         const insertLeadFooterQuery =
@@ -151,7 +159,7 @@ const addleads = async (req, res, next) => {
     await connection.rollback();
     error500(error, res);
   } finally {
-     connection.release();
+    if (connection) connection.release();
   }
 };
 // get lead_headers list...
@@ -242,6 +250,8 @@ const getLeadHeaders = async (req, res) => {
     return res.status(200).json(data);
   } catch (error) {
     return error500(error, res);
+  } finally {
+    if (pool) pool.releaseConnection()
   }
 };
 // get leads Header by id...
@@ -305,9 +315,7 @@ const getLeadsHeaderById = async (req, res, next) => {
   } catch (error) {
     error500(error, res);
   } finally {
-    if (pool) {
-      pool.releaseConnection();
-    }
+    if (pool) pool.releaseConnection();
   }
 };
 //lead_header update...
@@ -488,12 +496,12 @@ const updateLeads = async (req, res, next) => {
       status: 200,
       message: "Leads updated successfully.",
     });
-    res.end();
   } catch (error) {
     await connection.rollback();
     error500(error, res);
   } finally {
-    pool.releaseConnection();
+    if (pool) pool.releaseConnection();
+    if (connection) connection.release()
   }
 };
 //status change of lead_header...
@@ -553,6 +561,8 @@ const onStatusChange = async (req, res) => {
     });
   } catch (error) {
     return error500(error, res);
+  } finally {
+   if (pool) pool.releaseConnection();
   }
 };
 //get lead_header active...
@@ -574,6 +584,8 @@ const getLeadHeaderWma = async (req, res) => {
     });
   } catch (error) {
     return error500(error, res);
+  } finally {
+    if (pool) pool.releaseConnection();
   }
 };
 //delete lead_footer
@@ -718,7 +730,7 @@ const getFollowUpLeadsList = async (req, res, next) => {
   } catch (error) {
     error500(error, res);
   } finally {
-    pool.releaseConnection();
+    if (pool) pool.releaseConnection()
   }
 };
 const updateFollowUpLead = async (req, res) => {
@@ -836,6 +848,8 @@ const updateFollowUpLead = async (req, res) => {
   } catch (error) {
     await connection.rollback();
     return error500(error, res);
+  } finally {
+    if (connection) connection.release()
   }
 };
 // search lead_headers list...
@@ -1109,6 +1123,8 @@ const getFollowUpLeadsReportList = async (req, res) => {
     return res.status(200).json(data);
   } catch (error) {
     return error500(error, res);
+  } finally {
+    if (pool) pool.releaseConnection()
   }
 };
 
