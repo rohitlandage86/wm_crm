@@ -32,11 +32,12 @@ error500 = (error, res) => {
 const addEmployee = async (req, res) => {
   const name = req.body.name ? req.body.name.trim() : '';
   const email_id = req.body.email_id ? req.body.email_id.trim() : '';
-  const designation_id = req.body.designation_id ? req.body.designation_id : '';
+  const designation_id = req.body.designation_id ? req.body.designation_id : null;
   let charges = req.body.charges ? req.body.charges : 0;
-  const customer_id = req.body.customer_id ? req.body.customer_id : '';
-  const password = req.body.password ? req.body.password.trim() : '';
-  const untitled_id = req.companyData.untitled_id ? req.companyData.untitled_id : '';
+  const customer_id = req.body.customer_id ? req.body.customer_id : null;
+  const password = req.body.password ? req.body.password.trim() : null;
+  const untitled_id = req.companyData.untitled_id ? req.companyData.untitled_id : null;
+  const mobile_number = req.body.mobile_number ? req.body.mobile_number : null;
 
   if (!name) {
     return error422("Name is required.", res);
@@ -48,8 +49,10 @@ const addEmployee = async (req, res) => {
     return error422("Customer id is required.", res);
   } else if (!password) {
     return error422("Password is required.", res);
-  } else if(!untitled_id) {
+  } else if (!untitled_id) {
     return error422("Untitled id is required.", res)
+  } else if (!mobile_number) {
+    return error422("Mobile number is required.", res)
   }
 
   //Check if wm_customer_header exists
@@ -58,6 +61,7 @@ const addEmployee = async (req, res) => {
   if (customerExistResult[0].length == 0) {
     return error422("Customer Not Found.", res);
   }
+
   const branch_id = customerExistResult[0][0].branch_id;
 
   // Check if designation exists
@@ -68,10 +72,10 @@ const addEmployee = async (req, res) => {
   }
 
   //check if designation is doctor
-  if (designationResult[0][0].designation_name.toLowerCase().trim()=='doctor') {
-   if ((!charges) && (charges != 0)) {
-    return error422("Charges is required", res);
-   }
+  if (designationResult[0][0].designation_name.toLowerCase().trim() == 'doctor') {
+    if ((!charges) && (charges != 0)) {
+      return error422("Charges is required", res);
+    }
   } else {
     charges = 0
   }
@@ -82,12 +86,19 @@ const addEmployee = async (req, res) => {
   if (isExistEmployeeResult[0].length > 0) {
     return error422("Email ID is already exists.", res);
   }
-    //check employee  already is exists or notemployee
-    const isExistEmailQuery = `SELECT * FROM untitled  WHERE LOWER(TRIM(email_id)) = ?`;
-    const isExistEmailResult = await pool.query(isExistEmailQuery, [email_id.toLowerCase()]);
-    if (isExistEmailResult[0].length > 0) {
-      return error422("Email ID is already exists.", res);
-    }
+  //check employee  already is exists or notemployee
+  const isExistEmailQuery = `SELECT * FROM untitled  WHERE LOWER(TRIM(email_id)) = ?`;
+  const isExistEmailResult = await pool.query(isExistEmailQuery, [email_id.toLowerCase()]);
+  if (isExistEmailResult[0].length > 0) {
+    return error422("Email ID is already exists.", res);
+  }
+  //check mobile number already is exists or not in employee table
+  const isExistEmployeeMobileNoQuery = `SELECT * FROM employee  WHERE mobile_number = ?`;
+  const isExistEmployeeMobileNoResult = await pool.query(isExistEmployeeMobileNoQuery, [mobile_number]);
+  if (isExistEmployeeMobileNoResult[0].length > 0) {
+    return error422("Mobile number is already exists.", res);
+  }
+
   // Attempt to obtain a database connection
   let connection = await getConnection();
 
@@ -96,8 +107,8 @@ const addEmployee = async (req, res) => {
     await connection.beginTransaction();
 
     //insert into employee
-    const insertEmployeeQuery = `INSERT INTO employee (name, email_id, untitled_id, customer_id, designation_id, charges) VALUES (?, ?, ?, ?, ?, ?)`;
-    const insertEmployeeValues = [name, email_id, untitled_id, customer_id, designation_id, charges];
+    const insertEmployeeQuery = `INSERT INTO employee (name, email_id, untitled_id, customer_id, designation_id, charges, mobile_number) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const insertEmployeeValues = [name, email_id, untitled_id, customer_id, designation_id, charges, mobile_number];
     const employeeResult = await connection.query(insertEmployeeQuery, insertEmployeeValues);
     const employee_id = employeeResult[0].insertId;
 
@@ -144,10 +155,10 @@ const getEmployees = async (req, res) => {
 
     if (key) {
       const lowercaseKey = key.toLowerCase().trim();
-      if (key === "activated") {
+      if (lowercaseKey === "activated") {
         getEmployeeQuery += ` AND e.status = 1`;
         countQuery += ` AND e.status = 1`;
-      } else if (key === "deactivated") {
+      } else if (lowercaseKey === "deactivated") {
         getEmployeeQuery += ` AND e.status = 0`;
         countQuery += ` AND e.status = 0`;
       } else {
@@ -197,10 +208,10 @@ const getEmployee = async (req, res, next) => {
   const untitled_id = req.companyData.untitled_id;
   const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
   const untitledResult = await pool.query(checkUntitledQuery);
-  const customer_id =  untitledResult[0][0].customer_id;
+  const customer_id = untitledResult[0][0].customer_id;
   const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
   const customerResult = await pool.query(isCustomerQuery);
-  const untitledId =  customerResult[0][0].untitled_id;
+  const untitledId = customerResult[0][0].untitled_id;
   try {
     const employeeQuery = `SELECT e.*, e.untitled_id, d.designation_name, cb.branch  FROM  employee e
       LEFT JOIN wm_customer_branch cb
@@ -234,11 +245,12 @@ const getEmployee = async (req, res, next) => {
 const updateEmployee = async (req, res) => {
   const employeeId = parseInt(req.params.id);
   const name = req.body.name ? req.body.name : "";
-  const email_id = req.body.email_id ? req.body.email_id : "";
-  const customer_id = req.body.customer_id ? req.body.customer_id : "";
-  const designation_id = req.body.designation_id ? req.body.designation_id : "";
+  const email_id = req.body.email_id ? req.body.email_id.trim() : "";
+  const customer_id = req.body.customer_id ? req.body.customer_id : null;
+  const designation_id = req.body.designation_id ? req.body.designation_id : null;
   let charges = req.body.charges ? req.body.charges : 0;
   const untitled_id = req.companyData.untitled_id;
+  const mobile_number = req.body.mobile_number ? req.body.mobile_number : null;
 
   if (!name) {
     return error422(" Name is required.", res);
@@ -250,62 +262,71 @@ const updateEmployee = async (req, res) => {
     return error422("Designation id is required.", res);
   } else if (!employeeId) {
     return error422("Employee id is required.", res);
-  } else if(!customer_id) {
+  } else if (!customer_id) {
     return error422("Customer id is required.", res);
+  } else if (!mobile_number) {
+    return error422("Mobile number is required.", res);
   }
-    // Check if employee exists
-    const employeeQuery = "SELECT * FROM employee WHERE employee_id  = ? AND untitled_id = ?";
-    const employeeResult = await pool.query(employeeQuery, [employeeId, untitled_id]);
-    if (employeeResult[0].length == 0) {
-      return error422("Employee Not Found.", res);
-    }
-    //check if wm_customer_header exists
-    const isCustomerExistsQuery = "SELECT c.*, cb.branch_id, cb.branch FROM wm_customer_header c LEFT JOIN wm_customer_branch cb ON cb.customer_id = c.customer_id WHERE c.customer_id = ?";
-    const  customerExistResult = await pool.query(isCustomerExistsQuery, [customer_id]);
-    if (customerExistResult[0].length == 0){
-      return error422("Customer Not Found.",res);
-    }
-    const branch_id = customerExistResult[0][0].branch_id;
-    // check if designation exists
-    const isDesignationExistsQuery = "SELECT * FROM designation WHERE designation_id = ? AND untitled_id = ?";
-    const isDesignationExistsResult = await pool.query(isDesignationExistsQuery, [designation_id, untitled_id]);
-    if (isDesignationExistsResult[0].length == 0) {
-      return error422("Designation Not Found.", res);
-    }
-      //check if designation is doctor
-  if (isDesignationExistsResult[0][0].designation_name.toLowerCase().trim()=='doctor') {
+  // Check if employee exists
+  const employeeQuery = "SELECT * FROM employee WHERE employee_id  = ? AND untitled_id = ?";
+  const employeeResult = await pool.query(employeeQuery, [employeeId, untitled_id]);
+  if (employeeResult[0].length == 0) {
+    return error422("Employee Not Found.", res);
+  }
+  //check if wm_customer_header exists
+  const isCustomerExistsQuery = "SELECT c.*, cb.branch_id, cb.branch FROM wm_customer_header c LEFT JOIN wm_customer_branch cb ON cb.customer_id = c.customer_id WHERE c.customer_id = ?";
+  const customerExistResult = await pool.query(isCustomerExistsQuery, [customer_id]);
+  if (customerExistResult[0].length == 0) {
+    return error422("Customer Not Found.", res);
+  }
+  const branch_id = customerExistResult[0][0].branch_id;
+  // check if designation exists
+  const isDesignationExistsQuery = "SELECT * FROM designation WHERE designation_id = ? AND untitled_id = ?";
+  const isDesignationExistsResult = await pool.query(isDesignationExistsQuery, [designation_id, untitled_id]);
+  if (isDesignationExistsResult[0].length == 0) {
+    return error422("Designation Not Found.", res);
+  }
+  //check if designation is doctor
+  if (isDesignationExistsResult[0][0].designation_name.toLowerCase().trim() == 'doctor') {
     if ((!charges) && (charges != 0)) {
-     return error422("Charges is required", res);
+      return error422("Charges is required", res);
     }
-   } else {
+  } else {
     charges = 0;
-   }
-    // Check if the provided employee exists and is active
-    const existingEmployeeQuery ="SELECT * FROM employee WHERE  LOWER(TRIM(email_id)) = ? AND (employee_id!=? )";
-    const existingEmployeeResult = await pool.query(existingEmployeeQuery, [email_id.toLowerCase(),employeeId, untitled_id]);
-    if (existingEmployeeResult[0].length > 0) {
-      return error422("Email ID already exists.", res);
-    }
- // Attempt to obtain a database connection
- let connection = await getConnection();
+  }
+  // Check if the provided employee exists and is active
+  const existingEmployeeQuery = "SELECT * FROM employee WHERE  LOWER(TRIM(email_id)) = ? AND (employee_id!=? )";
+  const existingEmployeeResult = await pool.query(existingEmployeeQuery, [email_id.toLowerCase(), employeeId]);
+  if (existingEmployeeResult[0].length > 0) {
+    return error422("Email ID already exists.", res);
+  }
+  // Check if the provided employee mobile number exists and is active
+  const existingEmployeeMobileNumberQuery = "SELECT * FROM employee WHERE  mobile_number = ? AND (employee_id!=? )";
+  const existingEmployeeMobileNumberResult = await pool.query(existingEmployeeMobileNumberQuery, [mobile_number, employeeId]);
+  if (existingEmployeeMobileNumberResult[0].length > 0) {
+    return error422("Mobile number is already exists.", res);
+  }
 
- try {
-   // Start a transaction
-   await connection.beginTransaction();
+  // Attempt to obtain a database connection
+  let connection = await getConnection();
+
+  try {
+    // Start a transaction
+    await connection.beginTransaction();
 
     const nowDate = new Date().toISOString().split("T")[0];
     // Update the employee record with new data
     const updateQuery = `
             UPDATE employee
-            SET name = ?,  email_id = ?, customer_id = ?, designation_id = ?, charges = ?, untitled_id = ?, mts = ?
+            SET name = ?,  email_id = ?, customer_id = ?, designation_id = ?, charges = ?, mobile_number = ?, untitled_id = ?, mts = ?
             WHERE employee_id = ?`;
-    await connection.query(updateQuery, [name, email_id, customer_id, designation_id, charges, untitled_id, nowDate, employeeId]);
+    await connection.query(updateQuery, [name, email_id, customer_id, designation_id, charges, mobile_number, untitled_id, nowDate, employeeId]);
     // Insert untitled details
     const updateUntitledQuery = `UPDATE untitled 
       SET customer_id = ?, branch_id = ?, email_id = ?, mts = ?
       WHERE employee_id = ?`;
     const updateUntitledValues = [customer_id, branch_id, email_id, nowDate, employeeId];
-    const updateUntitledResult = await connection.query( updateUntitledQuery, updateUntitledValues);
+    const updateUntitledResult = await connection.query(updateUntitledQuery, updateUntitledValues);
     //commit the transaction
     await connection.commit();
     return res.status(200).json({
@@ -371,10 +392,10 @@ const getEmployeeWma = async (req, res, next) => {
 
   const checkUntitledQuery = `SELECT * FROM untitled WHERE untitled_id = ${untitled_id}  `;
   const untitledResult = await pool.query(checkUntitledQuery);
-  const customer_id =  untitledResult[0][0].customer_id;
+  const customer_id = untitledResult[0][0].customer_id;
   const isCustomerQuery = `SELECT * FROM untitled WHERE customer_id = ${customer_id} AND category = 2 `;
   const customerResult = await pool.query(isCustomerQuery);
-  const untitledId =  customerResult[0][0].untitled_id;
+  const untitledId = customerResult[0][0].untitled_id;
 
   let employeeQuery = `SELECT e.*, d.designation_name, cb.branch   FROM employee e
   LEFT JOIN wm_customer_branch cb

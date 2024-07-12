@@ -322,6 +322,8 @@ const createConsultation = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (connection) connection.release()
     }
 }
 
@@ -401,6 +403,8 @@ const getConsultationList = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (pool) pool.releaseConnection()
     }
 }
 // get consultation by  id
@@ -540,6 +544,8 @@ const getConsultationById = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (pool) pool.releaseConnection();
     }
 }
 //update consultation 
@@ -909,6 +915,8 @@ const updateConsultation = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (connection) connection.release()
     }
 
 }
@@ -947,6 +955,8 @@ const deleteConsultationDiagnosis = async (req, res) => {
     } catch (error) {
         await connection.rollback();
         return error500(error, res);
+    } finally {
+        if (connection) connection.release()
     }
 };
 //delete consultation Traetment
@@ -983,6 +993,8 @@ const deleteConsultationTreatment = async (req, res) => {
     } catch (error) {
         await connection.rollback();
         return error500(error, res);
+    } finally {
+        if (connection) connection.release()
     }
 };
 //delete consultation chief complaints
@@ -1020,6 +1032,8 @@ const deleteConsultationChiefComplaints = async (req, res) => {
     } catch (error) {
         await connection.rollback();
         return error500(error, res);
+    } finally {
+        if (connection) connection.release()
     }
 };
 //delete consultation Medicine
@@ -1057,6 +1071,8 @@ const deleteConsultationMedicine = async (req, res) => {
     } catch (error) {
         await connection.rollback();
         return error500(error, res);
+    } finally {
+        if (connection) connection.release()
     }
 };
 //delete consultation file upload
@@ -1098,6 +1114,8 @@ const deleteConsultationFileUpload = async (req, res) => {
     } catch (error) {
         await connection.rollback();
         return error500(error, res);
+    } finally {
+        if (connection) connection.release()
     }
 };
 // patient consultation  history list
@@ -1226,6 +1244,8 @@ const getConsulationsByMrno = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (pool) pool.releaseConnection()
     }
 }
 //Appointment list 
@@ -1309,6 +1329,8 @@ const getAppointmentList = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (pool) pool.releaseConnection()
     }
 
 }
@@ -1419,6 +1441,8 @@ const getConsultationDiagnosisList = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (pool) pool.releaseConnection()
     }
 
 }
@@ -1522,6 +1546,8 @@ const getConsultationTreatmentList = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if(pool) pool.releaseConnection()
     }
 
 }

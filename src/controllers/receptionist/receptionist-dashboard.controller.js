@@ -108,7 +108,7 @@ const addleads = async (req, res) => {
         await connection.rollback();
         return error500(error, res);
     } finally {
-        await connection.release();
+        if (connection) connection.release()
     }
 };
 // get receptionist dashboard Count...
@@ -269,8 +269,9 @@ const getReceptionistDashboardCount = async (req, res) => {
 
         return res.status(200).json(data);
     } catch (error) {
-        console.log('sdfsdfl', error);
         return error500(error, res);
+    } finally {
+        if (pool) pool.releaseConnection()
     }
 };
 const dateWisePatientAppointmentList = async (req, res) => {
@@ -300,6 +301,8 @@ const dateWisePatientAppointmentList = async (req, res) => {
     } catch (error) {
         console.log(error);
         return error500(error, res);
+    } finally {
+        if (pool) pool.releaseConnection()
     }
 }
 // get category wise lead header count
@@ -324,6 +327,8 @@ const  getCategoryWiseLeadHeaderCount = async (req, res) =>{
         })
     } catch (error) {
         return error500(error, res);
+    } finally{
+        if (pool) pool.releaseConnection()
     }
 }
 //get entity wise patient registration count
@@ -348,6 +353,8 @@ const getEntityWisePatientRegistrationCount = async (req, res)=>{
         })
     } catch (error) {
         return error500(error, res);
+    } finally {
+        if (pool) pool.releaseConnection()
     }
 }
 module.exports = {
