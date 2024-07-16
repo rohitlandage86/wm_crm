@@ -769,6 +769,18 @@ const patientRevisit = async (req, res) => {
   if (paymentHistoryResult[0].length == 0) {
     return error422("Payment history Not Found.", res);
   }
+  const nowDate1 = new Date();
+  nowDate1.setHours(0, 0, 0, 0);
+  const query = `SELECT * FROM patient_visit_list WHERE mrno = ?  ORDER BY visit_date DESC`;
+  const values = [mrno];
+  const visitedDateResult = await pool.query(query, values);
+  if (visitedDateResult[0].length > 0) {
+    const visitDate = new Date(visitedDateResult[0][0].visit_date);
+    visitDate.setHours(0, 0, 0, 0); //visit date to midnight
+    if (visitDate.getTime() === nowDate1.getTime()) {
+      return error422("Sorry, you have already visited today", res);
+    }
+  }
   const nowDate = new Date().toISOString().split("T")[0];
 
   try {
@@ -782,7 +794,7 @@ const patientRevisit = async (req, res) => {
     );
     return res.status(200).json({
       status: 200,
-      message: "Patient Re_Visit Successfully.",
+      message: "Patient Re Visit Successfully.",
     });
   } catch (error) {
     return error500(error, res);
@@ -1120,6 +1132,19 @@ const patientRenewly = async (req, res) => {
 
   if (paymentHistoryResult[0].length == 0) {
     return error422("Payment history Not Found.", res);
+  }
+
+  const nowDate1 = new Date();
+  nowDate1.setHours(0, 0, 0, 0);
+  const query = `SELECT * FROM patient_visit_list WHERE mrno = ?  ORDER BY visit_date DESC`;
+  const values = [mrno];
+  const visitedDateResult = await pool.query(query, values);
+  if (visitedDateResult[0].length > 0) {
+    const visitDate = new Date(visitedDateResult[0][0].visit_date);
+    visitDate.setHours(0, 0, 0, 0); //visit date to midnight
+    if (visitDate.getTime() === nowDate1.getTime()) {
+      return error422("Sorry, you have already visited today", res);
+    }
   }
   // Attempt to obtain a database connection
   let connection = await getConnection();
