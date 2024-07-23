@@ -71,7 +71,7 @@ const customerLogin = async (req, res) => {
           email_id: wm_customer_header.email_id,
         },
         "secret_this_should_be", // Use environment variable for secret key
-        { expiresIn: "1h" }
+        { expiresIn: "10h" }
       );
 
       const customerDataQuery = `SELECT c.*, u.untitled_id  FROM  wm_customer_header c LEFT JOIN untitled u ON u.customer_id =c.customer_id WHERE c.customer_id = ? `;
@@ -82,7 +82,7 @@ const customerLogin = async (req, res) => {
         status: 200,
         message: "Authentication successfully",
         token: token,
-        expiresIn: 3600, // 1 hour in seconds,
+        expiresIn: 36000000, // 10 hour in seconds,
         data: customerDataResult[0][0],
         category: wm_customer_header.category,
       });
@@ -275,7 +275,7 @@ const  createCustomer = async (req, res) => {
         email_id: customer_email,
       },
       "secret_this_should_be", // Use environment variable for secret key
-      { expiresIn: "1h" }
+      { expiresIn: "10h" }
     );
     return res.status(200).json({
       status: 200,
@@ -285,7 +285,7 @@ const  createCustomer = async (req, res) => {
         untitled_id: customer_untitled_id,
         category: 2,
         token: token,
-        expiresIn: 3600, // 1 hour in seconds,
+        expiresIn: 36000000, // 10 hour in seconds,
       },
     });
   } catch (error) {

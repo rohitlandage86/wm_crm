@@ -80,7 +80,7 @@ const createSuperAdmin = async (req, res) => {
         email_id: untitled.email_id,
       },
       "secret_this_should_be", // Use environment variable for secret key
-      { expiresIn: "1h" }
+      { expiresIn: "10h" }
     );
     return res.status(200).json({
       status: 200,
@@ -89,7 +89,7 @@ const createSuperAdmin = async (req, res) => {
         untitled_id: untitled_id,
         category: 1,
         token: token,
-        expiresIn: 3600, // 1 hour in seconds,
+        expiresIn: 36000000, // 10 hour in seconds,
       },
     });
   } catch (error) {
@@ -180,7 +180,7 @@ const login = async (req, res) => {
         email_id: untitled.email_id,
       },
       "secret_this_should_be", // Use environment variable for secret key
-      { expiresIn: "1h" }
+      { expiresIn: "10h" }
     );
 
     // Commit the transaction
@@ -188,7 +188,7 @@ const login = async (req, res) => {
       status: 200,
       message: "Authentication successfully",
       token: token,
-      expiresIn: 3600, // 1 hour in seconds,
+      expiresIn: 36000000, // 10 hour in seconds,
       data: untitledDataResult,
       category: untitled.category
     });
