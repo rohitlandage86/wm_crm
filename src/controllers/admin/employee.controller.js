@@ -463,7 +463,7 @@ const employeeLogin = async (req, res) => {
           email_id: wm_customer_header.email_id,
         },
         "secret_this_should_be", // Use environment variable for secret key
-        { expiresIn: "1h" }
+        { expiresIn: "10h" }
       );
 
       const customerDataQuery = `SELECT e.*, u.untitled_id, d.designation_name  FROM  employee e 
@@ -479,7 +479,7 @@ const employeeLogin = async (req, res) => {
         status: 200,
         message: "Authentication successfully",
         token: token,
-        expiresIn: 3600, // 1 hour in seconds,
+        expiresIn: 36000000, // 10 hour in seconds,
         data: customerDataResult[0][0],
         category: wm_customer_header.category,
       });
