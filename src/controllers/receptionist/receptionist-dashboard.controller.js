@@ -357,11 +357,78 @@ const getEntityWisePatientRegistrationCount = async (req, res)=>{
         if (pool) pool.releaseConnection()
     }
 }
+//get call log Dashboard Count...
+const getCallLogDashboardCount = async (req, res) => {
+    const untitled_id = req.companyData.untitled_id;
+    //check untitled_id already is exists or not
+    const isExistUntitledIdQuery = "SELECT * FROM untitled WHERE untitled_id = ?";
+    const isExistUntitledIdResult = await pool.query(isExistUntitledIdQuery, [untitled_id]);
+    const employeeDetails = isExistUntitledIdResult[0][0];
+    if (employeeDetails.customer_id == 0) {
+        return error422("Customer Not Found.", res);
+    }
+    const current_date = new Date().toISOString().split('T')[0];
+    
+    try {
+        let today_total_call_log_count = 0;
+        let is_outgoing_count = 0;
+        let is_incoming_count = 0;
+        let is_missed_count = 0;
+        let is_rejected_count = 0;
+
+        //today total call log count...
+        let todayTotalCallLogCountQuery = `SELECT COUNT(*) AS total FROM call_logs c 
+        WHERE Date(c.cts) = '${current_date}'  AND c.customer_id = ${employeeDetails.customer_id}`;
+        const todayTotalCallLogCountResult = await pool.query(todayTotalCallLogCountQuery);
+        today_total_call_log_count = parseInt(todayTotalCallLogCountResult[0][0].total);
+
+        //today is outgoing total call logs count...
+        let isOutGoingCountQuery = `SELECT COUNT(*) AS total FROM call_logs c 
+        WHERE Date(c.cts) = '${current_date}' AND c.customer_id = ${employeeDetails.customer_id} AND c.calling_type = 'OUTGOING'`;
+        const isGoingTotalCountResult = await pool.query(isOutGoingCountQuery);
+        is_outgoing_count = parseInt(isGoingTotalCountResult[0][0].total);
+
+        //today is incoming total call logs count...
+        let isIncomingCountQuery = `SELECT COUNT(*) AS total FROM call_logs c 
+        WHERE Date(c.cts) = '${current_date}'  AND c.customer_id = ${employeeDetails.customer_id} AND c.calling_type = 'INCOMING'`;
+        const isIncomingTotalCountResult = await pool.query(isIncomingCountQuery);
+        is_incoming_count = parseInt(isIncomingTotalCountResult[0][0].total);
+
+        //today missed total call log count...
+        let isMissedCountQuery = `SELECT COUNT(*) AS total FROM call_logs c  
+        WHERE Date(c.cts) = '${current_date}' AND c.calling_type = 'MISSED' AND c.customer_id = ${employeeDetails.customer_id}`;
+        const isMissedTotalCountResult = await pool.query(isMissedCountQuery);
+        is_missed_count = parseInt(isMissedTotalCountResult[0][0].total);
+
+        //today reject total call logs count...
+        let rejectedCountQuery = `SELECT COUNT(*) AS total FROM call_logs c
+         WHERE Date(c.cts) = '${current_date}' AND c.calling_type = 'REJECTED' AND c.customer_id = ${employeeDetails.customer_id}`;
+        const rejectedTotalCountResult = await pool.query(rejectedCountQuery);
+        is_rejected_count = parseInt(rejectedTotalCountResult[0][0].total);
+
+        const data = {
+            status: 200,
+            message: " Receptionist dashboard call log count retrieved successfully",
+            today_total_call_log_count: today_total_call_log_count,
+            is_outgoing_count: is_outgoing_count,
+            is_incoming_count: is_incoming_count,
+            is_missed_count: is_missed_count,
+            is_rejected_count: is_rejected_count,
+        };
+
+        return res.status(200).json(data);
+    } catch (error) {
+        return error500(error, res);
+    } finally {
+        if (pool) pool.releaseConnection()
+    }
+}
 module.exports = {
     addleads,
     getReceptionistDashboardCount,
     dateWisePatientAppointmentList,
     getCategoryWiseLeadHeaderCount,
-    getEntityWisePatientRegistrationCount
+    getEntityWisePatientRegistrationCount,
+    getCallLogDashboardCount
 
 };
