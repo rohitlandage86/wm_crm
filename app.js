@@ -39,7 +39,8 @@ const wm_modulesRoute = require("./src/routes/super_admin/wm_modules.route");
 const super_adminRoute = require("./src/routes/super_admin/super_admin.route");
 
 //doctor 
-const consultationRoute = require("./src/routes/doctor/consultation.route")
+const consultationRoute = require("./src/routes/doctor/consultation.route");
+const callLogRoute = require('./src/routes/receptionist/call_logs.route')
 
 app.use(bodyParser.json());
 app.use((req,res,next)=>{
@@ -85,6 +86,7 @@ app.use('/api/wm_cutomer_type',wm_cutomer_typeRoute);
 app.use('/api/wm_modules',wm_modulesRoute);
 app.use('/api/super_admin',super_adminRoute);
 app.use('/api/consultation',consultationRoute);
+app.use('/api/call-log', callLogRoute)
 
 
 
